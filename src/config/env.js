@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const requiredEnvVars = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
+const requiredEnvVars = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS'];
 
 for (const key of requiredEnvVars) {
   if (!process.env[key]) {
@@ -22,6 +22,17 @@ export const env = {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
     apiKey: process.env.CLOUDINARY_API_KEY || '',
     apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+  },
+  email: {
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+    from: process.env.EMAIL_FROM || 'PawfectCare <no-reply@pawfectcare.com>'
+  },
+  otp: {
+    secret: process.env.OTP_SECRET,
+    expiryMs: process.env.OTP_EXPIRY_MS ? parseInt(process.env.OTP_EXPIRY_MS) : 5 * 60 * 1000,
   },
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
 };
