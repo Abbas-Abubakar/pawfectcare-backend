@@ -1,6 +1,6 @@
 import User from "../model/user.model.js";
-import AppError from "../utils/appError.js";
-import asyncErrorHandler from "../utils/asyncErrorHandler.js";
+import AppError from "../utils/appError.utils.js";
+import asyncErrorHandler from "../utils/asyncErrorHandler.utils.js";
 import { clearAuthCookies, setAuthCookies } from "../utils/cookie.utils.js";
 import { generateAuthToken, signAccessToken, verifyRefreshToken } from "../utils/jwt.utils.js";
 import { sendOtpEmail, sendPasswordresetToken } from "../utils/mailer.utils.js";
