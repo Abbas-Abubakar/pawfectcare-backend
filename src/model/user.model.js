@@ -1,5 +1,6 @@
 import mongoose from "mongoose"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -99,6 +100,14 @@ userSchema.methods.isPasswordChanged = async function(JWTTimestamp){
   }
 
   return false
+}
+
+userSchema.methods.createResestToken = function(){
+  const resetToken = crypto.randomBytes(32).toString('hex')
+
+  this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000
+  return resetToken
 }
 
 

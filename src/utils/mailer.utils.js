@@ -42,3 +42,19 @@ export const sendOtpEmail = async(to, otp, name) => {
     `
   })
 }
+
+export const sendPasswordresetToken = async(to, resetUrl, name) => {
+  await sendEmail({
+    to,
+    subject: "Reset your PawfectCare Password",
+    html: `
+      <div style="max-width: 480px; margin: auto">
+        <h2>Password Reset Request</h2>
+        <p>Hi ${name}, we received a request to reset your password</p>
+        <p>This link expires in 10 minutes. if you didn't request this, you can safely ignore this email.</p>
+                <a href="${resetUrl}" style="display: inline-block; padding: 24px 12px; background: #2563eb; color: #fff text-decoration: none; border-radius: 6px; margin-top: 12px;">Reset Password</a>
+        <p style="margin-top: 12px;font-size: 12px; color: #666">Or copy this link ${resetUrl}</p>
+      </div>
+    `
+  })
+}

@@ -3,8 +3,9 @@ import AppError from "../utils/appError.js";
 import asyncErrorHandler from "../utils/asyncErrorHandler.js";
 import { clearAuthCookies, setAuthCookies } from "../utils/cookie.utils.js";
 import { generateAuthToken, signAccessToken, verifyRefreshToken } from "../utils/jwt.utils.js";
-import { sendOtpEmail } from "../utils/mailer.utils.js";
+import { sendOtpEmail, sendPasswordresetToken } from "../utils/mailer.utils.js";
 import { generateOtp, hashOtp, OTP_EXPIRY_MS } from "../utils/otp.utlls.js";
+import { generateResetToken, hashToken, RESET_TOKEN_EXPIRY_MS } from "../utils/token.utils.js";
 
 /**
  * @route POST /api/auth/signup
@@ -212,6 +213,69 @@ export const refresh = asyncErrorHandler(async (req, res) => {
   res.status(200).json({
     status: "success",
     message: "Access token refreshed."
+  })
+})
+
+/**
+ * @route POST /api/auth/forgot-password
+ * @desc Generate a reset token and email a reset link
+ */
+export const forgotPassowrd = asyncErrorHandler(async (req, res) => {
+  const { email } = req.body
+
+  const normalizedEmail = email.trim().toLowerCase()
+
+  const user = await User.findOne({ email: normalizedEmail })
+
+  if (!user) throw new AppError("if an account with this email exists, a reset link has been sent", 404)
+
+  const { rawToken, hashedToken } = generateResetToken()
+  user.passwordResetToken = hashedToken
+  user.passwordResetTokenExpires = Date.now() + RESET_TOKEN_EXPIRY_MS
+  await user.save({ validateBeforeSave: false })
+
+  const resetUrl = `${req.protocol}://${req.get("host")}/api/resetPassword/${rawToken}`
+
+  try {
+    await sendPasswordresetToken(user.email, resetUrl, user.name)
+
+  } catch (err) {
+
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpires = undefined;
+
+    await user.save({ validateBeforeSave: false });
+
+    throw new CustomError("Failed to send email", 500);
+  }
+
+})
+
+/**
+ * @route POST /api/auth/reset-password
+ * @desc Resets user password
+ */
+
+export const resestPassword = asyncErrorHandler(async (req, res) => {
+  const hashedToken = hashToken(req.params.token)
+
+  const user = await User.findOne({passwordResetToken: hashedToken, passwordResetTokenExpires: {$gt: Date.now()}})
+
+  if(!user) throw new ApprError("Invalid or expired token", 400)
+
+  user.password = req.body.newPassword
+  user.passwordResetToken = undefined
+  user.passwordResetTokenExpires = undefined
+  user.passwordChangedAt = Date.now()
+
+  await user.save()
+
+  const { accessToken, refreshToken } = generateAuthToken(user_.id, user.role)
+  setAuthCookies(res, accessToken, refreshToken)
+  res.status(200).json({
+    status: "sucess",
+    message: "Password reset successful",
+    user: user.toSafeObject()
   })
 })
 
