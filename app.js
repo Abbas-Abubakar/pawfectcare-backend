@@ -10,6 +10,8 @@ import { globalErrorHandler } from './src/middleware/errorHandler.js';
 
 import authRoutes from './src/routes/auth.routes.js'
 import petRoutes from './src/routes/pet.routes.js'
+import vetAvailabilityRoutes from './src/routes/vetAvailability.routes.js'
+import appointmentRoutes from './src/routes/appointment.routes.js'
 
 import healthRoutes from './src/routes/health.routes.js';
 import AppError from './src/utils/appError.utils.js';
@@ -40,10 +42,13 @@ app.use('/api/health', healthRoutes);
 // TODO: mount auth, pets, appointments, etc. routes here as we build them
 app.use('/api/auth', authRoutes)
 app.use('/api/pets', petRoutes)
+app.use('/api/availability', vetAvailabilityRoutes);
+app.use('/api/appointments', appointmentRoutes);
 // 404 + error handling (must be last)
 app.all("/{*splat}", (req, res, next) => {
-  return new AppError(`Route not found: ${req.originalUrl}`, 404)
-})
+  const err = new AppError(`Route not found: ${req.originalUrl}`, 404);
+  next(err);
+});
 app.use(globalErrorHandler);
 
 export default app;

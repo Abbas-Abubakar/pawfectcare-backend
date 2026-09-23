@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ["pet_owner", "Veterinarian", "shelter_admin"],
+    enum: ["pet_owner", "veterinarian", "shelter_admin"],
     required: [true, "Role is required"]
   },
   photo: {
