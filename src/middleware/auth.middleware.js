@@ -1,6 +1,6 @@
-import User from "../model/user.model.js"
-import AppError from "../utils/appError.js"
-import asyncErrorHandler from "../utils/asyncErrorHandler.js"
+import User from "../models/user.model.js"
+import AppError from "../utils/appError.utils.js"
+import asyncErrorHandler from "../utils/asyncErrorHandler.utils.js"
 import { veriftyAccessToken } from "../utils/jwt.utils.js"
 
 /**

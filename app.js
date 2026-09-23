@@ -6,12 +6,13 @@ import cookieParser from 'cookie-parser';
 import compression from 'compression';
 
 import { env } from './src/config/env.js';
-import { globalErrorHandler } from './src/middeware/errorHandler.js';
+import { globalErrorHandler } from './src/middleware/errorHandler.js';
 
 import authRoutes from './src/routes/auth.routes.js'
+import petRoutes from './src/routes/pet.routes.js'
 
 import healthRoutes from './src/routes/health.routes.js';
-import AppError from './src/utils/appError.js';
+import AppError from './src/utils/appError.utils.js';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/health', healthRoutes);
 
 // TODO: mount auth, pets, appointments, etc. routes here as we build them
 app.use('/api/auth', authRoutes)
+app.use('/api/pets', petRoutes)
 // 404 + error handling (must be last)
 app.all("/{*splat}", (req, res, next) => {
   return new AppError(`Route not found: ${req.originalUrl}`, 404)

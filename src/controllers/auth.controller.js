@@ -1,4 +1,4 @@
-import User from "../model/user.model.js";
+import User from "../models/user.model.js";
 import AppError from "../utils/appError.utils.js";
 import asyncErrorHandler from "../utils/asyncErrorHandler.utils.js";
 import { clearAuthCookies, setAuthCookies } from "../utils/cookie.utils.js";
@@ -234,10 +234,14 @@ export const forgotPassowrd = asyncErrorHandler(async (req, res) => {
   user.passwordResetTokenExpires = Date.now() + RESET_TOKEN_EXPIRY_MS
   await user.save({ validateBeforeSave: false })
 
-  const resetUrl = `${req.protocol}://${req.get("host")}/api/resetPassword/${rawToken}`
+  const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/reset-password/${rawToken}`
 
   try {
     await sendPasswordresetToken(user.email, resetUrl, user.name)
+    res.status(200).json({
+      status: "success",
+      message: "If an account with this email exists, a reset link has been sent"
+    })
 
   } catch (err) {
 
@@ -246,7 +250,7 @@ export const forgotPassowrd = asyncErrorHandler(async (req, res) => {
 
     await user.save({ validateBeforeSave: false });
 
-    throw new CustomError("Failed to send email", 500);
+    throw new AppError("Failed to send email", 500);
   }
 
 })
@@ -261,7 +265,7 @@ export const resestPassword = asyncErrorHandler(async (req, res) => {
 
   const user = await User.findOne({passwordResetToken: hashedToken, passwordResetTokenExpires: {$gt: Date.now()}})
 
-  if(!user) throw new ApprError("Invalid or expired token", 400)
+  if(!user) throw new AppError("Invalid or expired token", 400)
 
   user.password = req.body.newPassword
   user.passwordResetToken = undefined
@@ -270,7 +274,7 @@ export const resestPassword = asyncErrorHandler(async (req, res) => {
 
   await user.save()
 
-  const { accessToken, refreshToken } = generateAuthToken(user_.id, user.role)
+  const { accessToken, refreshToken } = generateAuthToken(user._id, user.role)
   setAuthCookies(res, accessToken, refreshToken)
   res.status(200).json({
     status: "sucess",
