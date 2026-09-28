@@ -203,3 +203,100 @@ export const cancelAppointment = asyncErrorHandler(async (req, res, next) => {
     appointment,
   });
 });
+
+/**
+ * @route   PATCH /api/appointments/:id/confirm
+ * @desc    Vet confirms a pending appointment
+ */
+export const confirmAppointment = async (req, res, next) => {
+  try {
+    const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
+
+    if (!appointment) {
+      throw new AppError('Appointment not found.', 404);
+    }
+
+    if (appointment.status !== 'pending') {
+      throw new AppError(`Cannot confirm an appointment that is ${appointment.status}.`, 400);
+    }
+
+    appointment.status = 'confirmed';
+    await appointment.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment confirmed.',
+      appointment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   PATCH /api/appointments/:id/reject
+ * @desc    Vet rejects a pending appointment (frees the slot, distinct from cancel)
+ */
+export const rejectAppointment = async (req, res, next) => {
+  try {
+    const { cancelReason } = req.body;
+
+    const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
+
+    if (!appointment) {
+      throw new AppError('Appointment not found.', 404);
+    }
+
+    if (appointment.status !== 'pending') {
+      throw new AppError(`Cannot reject an appointment that is ${appointment.status}.`, 400);
+    }
+
+    appointment.status = 'cancelled';
+    appointment.cancelledBy = req.user._id;
+    appointment.cancelReason = cancelReason || 'Rejected by veterinarian';
+    await appointment.save();
+
+    const slot = await VetAvailability.findById(appointment.availability);
+    if (slot) {
+      slot.isBooked = false;
+      await slot.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment rejected.',
+      appointment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   PATCH /api/appointments/:id/complete
+ * @desc    Vet marks a confirmed appointment as completed (after the visit)
+ */
+export const completeAppointment = async (req, res, next) => {
+  try {
+    const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
+
+    if (!appointment) {
+      throw new AppError('Appointment not found.', 404);
+    }
+
+    if (appointment.status !== 'confirmed') {
+      throw new AppError('Only confirmed appointments can be marked completed.', 400);
+    }
+
+    appointment.status = 'completed';
+    await appointment.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment marked as completed.',
+      appointment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
