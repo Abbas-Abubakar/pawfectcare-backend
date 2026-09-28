@@ -12,6 +12,8 @@ import authRoutes from './src/routes/auth.routes.js'
 import petRoutes from './src/routes/pet.routes.js'
 import vetAvailabilityRoutes from './src/routes/vetAvailability.routes.js'
 import appointmentRoutes from './src/routes/appointment.routes.js'
+import productRoutes from './src/routes/product.routes.js'
+import wishlistRoutes from './src/routes/wishlist.routes.js'
 
 import healthRoutes from './src/routes/health.routes.js';
 import AppError from './src/utils/appError.utils.js';
@@ -44,6 +46,8 @@ app.use('/api/auth', authRoutes)
 app.use('/api/pets', petRoutes)
 app.use('/api/availability', vetAvailabilityRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 // 404 + error handling (must be last)
 app.all("/{*splat}", (req, res, next) => {
   const err = new AppError(`Route not found: ${req.originalUrl}`, 404);
