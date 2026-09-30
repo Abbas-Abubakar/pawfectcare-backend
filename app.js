@@ -18,8 +18,9 @@ import bookmarkRoutes from './src/routes/bookmark.routes.js'
 import blogPostRoutes from './src/routes/blogPost.routes.js'
 import vetDashboardRoutes from './src/routes/vetDashboard.routes.js'
 import adoptionListingRoutes from './src/routes/adoptionListing.routes.js';
-import healthRoutes from './src/routes/health.routes.js';
 import AppError from './src/utils/appError.utils.js';
+import adoptionRequestRoutes from './routes/adoptionRequest.routes.js';
+import healthRoutes from './src/routes/health.routes.js'; 
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use('/api/blog', blogPostRoutes);
 app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/vet/dashboard', vetDashboardRoutes);
 app.use('/api/adoptions', adoptionListingRoutes);
+app.use('/api/adoptions', adoptionRequestRoutes);
 // 404 + error handling (must be last)
 app.all("/{*splat}", (req, res, next) => {
   const err = new AppError(`Route not found: ${req.originalUrl}`, 404);
