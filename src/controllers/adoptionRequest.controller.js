@@ -5,6 +5,7 @@ import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
 import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.utils.js'
 import cloudinary from '../config/cloudinary.js'
+import { createNotification } from '../utils/notify.utils.js';
 /**
  * @route   POST /api/adoptions/:listingId/requests
  * @desc    Pet owner applies to adopt a listed pet
@@ -174,18 +175,37 @@ export const approveRequest = asyncErrorHandler(async (req, res) => {
   request.resultingPet = pet._id;
   await request.save();
 
+  await createNotification({
+    userId: request.applicant,
+    type: 'adoption_status',
+    title: 'Adoption Approved! 🎉',
+    message: `Congratulations! Your request to adopt ${listing.name} has been approved.`,
+    link: `/pets/${pet._id}`,
+  });
+
   listing.status = 'adopted';
   await listing.save();
 
   // Auto-reject any other still-pending requests for the same listing
-  await AdoptionRequest.updateMany(
-    { listing: listing._id, status: 'pending', _id: { $ne: request._id } },
-    {
-      status: 'rejected',
-      reviewedBy: req.user._id,
-      reviewNote: 'This pet has been adopted by another applicant.',
-    }
-  );
+  const otherPendingRequests = await AdoptionRequest.find({
+    listing: listing._id,
+    status: 'pending',
+    _id: { $ne: request._id },
+  });
+
+  for (const otherRequest of otherPendingRequests) {
+    otherRequest.status = 'rejected';
+    otherRequest.reviewedBy = req.user._id;
+    otherRequest.reviewNote = 'This pet has been adopted by another applicant.';
+    await otherRequest.save();
+
+    await createNotification({
+      userId: otherRequest.applicant,
+      type: 'adoption_status',
+      title: 'Adoption Request Update',
+      message: `${listing.name} has been adopted by another applicant.`,
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -221,6 +241,13 @@ export const rejectRequest = asyncErrorHandler(async (req, res) => {
   request.reviewedBy = req.user._id;
   request.reviewNote = reviewNote;
   await request.save();
+
+  await createNotification({
+    userId: request.applicant,
+    type: 'adoption_status',
+    title: 'Adoption Request Declined',
+    message: `Your request to adopt ${request.listing.name} was not approved.${reviewNote ? ' Reason: ' + reviewNote : ''}`,
+  });
 
   res.status(200).json({
     success: true,

@@ -1,6 +1,7 @@
 import app from "./app.js";
 import { connectDB } from "./src/config/db.js"
 import { env } from "./src/config/env.js";
+import { startReminderJobs } from "./src/jobs/reminderScheduler.js";
 
 
 const startServer = async () => {
@@ -8,6 +9,7 @@ const startServer = async () => {
     await connectDB()
 
     const server = app.listen(env.port, () => {
+      startReminderJobs();
       console.log(`Server is running on port: ${env.port}`)
       console.log(`Environment: ${env.nodeEnv}`)
     })

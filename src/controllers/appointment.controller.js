@@ -3,6 +3,7 @@ import VetAvailability from '../models/vetAvailability.model.js';
 import Pet from '../models/pet.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
+import { createNotification } from '../utils/notify.utils.js';
 
 /**
  * @route   POST /api/appointments
@@ -211,22 +212,30 @@ export const cancelAppointment = asyncErrorHandler(async (req, res, next) => {
 export const confirmAppointment = asyncErrorHandler(async (req, res) => {
   const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
 
-    if (!appointment) {
-      throw new AppError('Appointment not found.', 404);
-    }
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
 
-    if (appointment.status !== 'pending') {
-      throw new AppError(`Cannot confirm an appointment that is ${appointment.status}.`, 400);
-    }
+  if (appointment.status !== 'pending') {
+    throw new AppError(`Cannot confirm an appointment that is ${appointment.status}.`, 400);
+  }
 
-    appointment.status = 'confirmed';
-    await appointment.save();
+  appointment.status = 'confirmed';
+  await appointment.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Appointment confirmed.',
-      appointment,
-    });
+  await createNotification({
+    userId: appointment.owner,
+    type: 'appointment_status',
+    title: 'Appointment Confirmed',
+    message: `Your appointment on ${appointment.date.toDateString()} at ${appointment.startTime} has been confirmed.`,
+    link: `/appointments/${appointment._id}`,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Appointment confirmed.',
+    appointment,
+  });
 
 });
 
@@ -237,32 +246,40 @@ export const confirmAppointment = asyncErrorHandler(async (req, res) => {
 export const rejectAppointment = asyncErrorHandler(async (req, res) => {
   const { cancelReason } = req.body;
 
-    const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
+  const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
 
-    if (!appointment) {
-      throw new AppError('Appointment not found.', 404);
-    }
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
 
-    if (appointment.status !== 'pending') {
-      throw new AppError(`Cannot reject an appointment that is ${appointment.status}.`, 400);
-    }
+  if (appointment.status !== 'pending') {
+    throw new AppError(`Cannot reject an appointment that is ${appointment.status}.`, 400);
+  }
 
-    appointment.status = 'cancelled';
-    appointment.cancelledBy = req.user._id;
-    appointment.cancelReason = cancelReason || 'Rejected by veterinarian';
-    await appointment.save();
+  appointment.status = 'cancelled';
+  appointment.cancelledBy = req.user._id;
+  appointment.cancelReason = cancelReason || 'Rejected by veterinarian';
+  await appointment.save();
 
-    const slot = await VetAvailability.findById(appointment.availability);
-    if (slot) {
-      slot.isBooked = false;
-      await slot.save();
-    }
+  await createNotification({
+    userId: appointment.owner,
+    type: 'appointment_status',
+    title: 'Appointment Rejected',
+    message: `Your appointment request for ${appointment.date.toDateString()} was declined by the veterinarian.`,
+    link: `/appointments/${appointment._id}`,
+  });
 
-    res.status(200).json({
-      success: true,
-      message: 'Appointment rejected.',
-      appointment,
-    });
+  const slot = await VetAvailability.findById(appointment.availability);
+  if (slot) {
+    slot.isBooked = false;
+    await slot.save();
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Appointment rejected.',
+    appointment,
+  });
 
 });
 
@@ -273,21 +290,21 @@ export const rejectAppointment = asyncErrorHandler(async (req, res) => {
 export const completeAppointment = asyncErrorHandler(async (req, res) => {
   const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
 
-    if (!appointment) {
-      throw new AppError('Appointment not found.', 404);
-    }
+  if (!appointment) {
+    throw new AppError('Appointment not found.', 404);
+  }
 
-    if (appointment.status !== 'confirmed') {
-      throw new AppError('Only confirmed appointments can be marked completed.', 400);
-    }
+  if (appointment.status !== 'confirmed') {
+    throw new AppError('Only confirmed appointments can be marked completed.', 400);
+  }
 
-    appointment.status = 'completed';
-    await appointment.save();
+  appointment.status = 'completed';
+  await appointment.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Appointment marked as completed.',
-      appointment,
-    });
+  res.status(200).json({
+    success: true,
+    message: 'Appointment marked as completed.',
+    appointment,
+  });
 
 });
