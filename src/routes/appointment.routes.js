@@ -10,10 +10,13 @@ import {
   completeAppointment,
 } from '../controllers/appointment.controller.js';
 import { protect, restrictTo } from '../middleware/auth.middleware.js';
+import medicalRecordRoutes from './medicalRecord.routes.js';
 
 const router = Router();
 
 router.use(protect);
+
+router.use('/:appointmentId/medical-record', medicalRecordRoutes);
 
 router.post('/', restrictTo('pet_owner'), bookAppointment);
 router.get('/my-appointments', restrictTo('pet_owner'), getMyAppointments);

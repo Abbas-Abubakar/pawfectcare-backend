@@ -208,9 +208,8 @@ export const cancelAppointment = asyncErrorHandler(async (req, res, next) => {
  * @route   PATCH /api/appointments/:id/confirm
  * @desc    Vet confirms a pending appointment
  */
-export const confirmAppointment = async (req, res, next) => {
-  try {
-    const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
+export const confirmAppointment = asyncErrorHandler(async (req, res) => {
+  const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
 
     if (!appointment) {
       throw new AppError('Appointment not found.', 404);
@@ -228,18 +227,15 @@ export const confirmAppointment = async (req, res, next) => {
       message: 'Appointment confirmed.',
       appointment,
     });
-  } catch (error) {
-    next(error);
-  }
-};
+
+});
 
 /**
  * @route   PATCH /api/appointments/:id/reject
  * @desc    Vet rejects a pending appointment (frees the slot, distinct from cancel)
  */
-export const rejectAppointment = async (req, res, next) => {
-  try {
-    const { cancelReason } = req.body;
+export const rejectAppointment = asyncErrorHandler(async (req, res) => {
+  const { cancelReason } = req.body;
 
     const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
 
@@ -267,18 +263,15 @@ export const rejectAppointment = async (req, res, next) => {
       message: 'Appointment rejected.',
       appointment,
     });
-  } catch (error) {
-    next(error);
-  }
-};
+
+});
 
 /**
  * @route   PATCH /api/appointments/:id/complete
  * @desc    Vet marks a confirmed appointment as completed (after the visit)
  */
-export const completeAppointment = async (req, res, next) => {
-  try {
-    const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
+export const completeAppointment = asyncErrorHandler(async (req, res) => {
+  const appointment = await Appointment.findOne({ _id: req.params.id, vet: req.user._id });
 
     if (!appointment) {
       throw new AppError('Appointment not found.', 404);
@@ -296,7 +289,5 @@ export const completeAppointment = async (req, res, next) => {
       message: 'Appointment marked as completed.',
       appointment,
     });
-  } catch (error) {
-    next(error);
-  }
-};
+
+});
