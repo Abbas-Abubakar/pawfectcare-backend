@@ -11,8 +11,9 @@ const router = Router({ mergeParams: true });
 
 router.use(protect);
 
-router.post('/', restrictTo('veterinarian'), uploadMultiple, createMedicalRecord);
+router.post('/', restrictTo('veterinarian'), uploadMultiple('attachments', 5), createMedicalRecord);
+router.patch('/', restrictTo('veterinarian'), uploadMultiple('attachments', 5), updateMedicalRecord);
 router.get('/', getMedicalRecordByAppointment); // owner or vet
-router.patch('/', restrictTo('veterinarian'), uploadMultiple, updateMedicalRecord);
+
 
 export default router;
