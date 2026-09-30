@@ -30,9 +30,9 @@ const userSchema = new mongoose.Schema({
     enum: ["pet_owner", "veterinarian", "shelter_admin"],
     required: [true, "Role is required"]
   },
-  photo: {
-    type: String,
-    default: ""
+  profilePhoto: {
+    url: { type: String, default: '' },
+    publicId: { type: String, default: '' },
   },
   isActive: {
     type: Boolean,
@@ -72,28 +72,28 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false
   }
-},{
+}, {
   timestamps: true
 }
 )
 
-userSchema.pre("save", async function() {
-  if(!this.isModified("password")) return
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return
 
   const salt = await bcrypt.genSalt(12)
   this.password = await bcrypt.hash(this.password, salt)
 })
 
-userSchema.pre(/^find/, function(){
-  this.find({isActive: {$ne: false}})
+userSchema.pre(/^find/, function () {
+  this.find({ isActive: { $ne: false } })
 })
 
-userSchema.methods.matchPassword = async function(password) {
+userSchema.methods.matchPassword = async function (password) {
   return bcrypt.compare(password, this.password)
 }
 
-userSchema.methods.isPasswordChanged = async function(JWTTimestamp){
-  if(this.passwordChangedAt){
+userSchema.methods.isPasswordChanged = async function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
     const passwordChangedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10)
 
     return JWTTimestamp < passwordChangedTimestamp
@@ -102,7 +102,7 @@ userSchema.methods.isPasswordChanged = async function(JWTTimestamp){
   return false
 }
 
-userSchema.methods.createResestToken = function(){
+userSchema.methods.createResestToken = function () {
   const resetToken = crypto.randomBytes(32).toString('hex')
 
   this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex')
@@ -111,14 +111,14 @@ userSchema.methods.createResestToken = function(){
 }
 
 
-userSchema.methods.toSafeObject = function(){
+userSchema.methods.toSafeObject = function () {
   return {
     id: this._id,
     name: this.name,
     email: this.email,
     phone: this.phone,
     role: this.role,
-    photo: this.photo,
+    profilePhoto: this.profilePhoto,
     isActive: this.isActive,
     isVerified: this.isVerified,
     createdAt: this.createdAt

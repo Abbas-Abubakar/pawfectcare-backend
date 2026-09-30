@@ -22,6 +22,7 @@ import adoptionRequestRoutes from './src/routes/adoptionRequest.routes.js';
 import successStoryRoutes from './src/routes/successStory.routes.js';
 import contactMessageRoutes from './src/routes/contactMessage.routes.js';
 import notificationRoutes from './src/routes/notification.routes.js';
+import userRoutes from './src/routes/user.routes.js';
 import AppError from './src/utils/appError.utils.js'; 
 import healthRoutes from './src/routes/health.routes.js'; 
 
@@ -63,6 +64,7 @@ app.use('/api/adoptions', adoptionRequestRoutes);
 app.use('/api/success-stories', successStoryRoutes);
 app.use('/api/contact', contactMessageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
 // 404 + error handling (must be last)
 app.all("/{*splat}", (req, res, next) => {
   const err = new AppError(`Route not found: ${req.originalUrl}`, 404);
