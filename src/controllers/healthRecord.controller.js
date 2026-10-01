@@ -29,31 +29,31 @@ const getAuthorizedPet = async (petId, user) => {
  * @desc    Add a health record to a pet (owner or vet)
  */
 export const createHealthRecord = asyncErrorHandler(async (req, res) => {
-    const { petId } = req.params;
-    await getAuthorizedPet(petId, req.user);
+  const { petId } = req.params;
+  await getAuthorizedPet(petId, req.user);
 
-    const { type, title, description, dateAdministered, nextDueDate, severity } = req.body;
+  const { type, title, description, dateAdministered, nextDueDate, severity } = req.body;
 
-    if (!type || !title) {
-      throw new AppError('Record type and title are required.', 400);
-    }
+  if (!type || !title) {
+    throw new AppError('Record type and title are required.', 400);
+  }
 
-    const record = await HealthRecord.create({
-      pet: petId,
-      addedBy: req.user._id,
-      type,
-      title,
-      description,
-      dateAdministered,
-      nextDueDate,
-      severity,
-    });
+  const record = await HealthRecord.create({
+    pet: petId,
+    addedBy: req.user._id,
+    type,
+    title,
+    description,
+    dateAdministered,
+    nextDueDate,
+    severity,
+  });
 
-    res.status(201).json({
-      success: true,
-      message: 'Health record added successfully.',
-      record,
-    });
+  res.status(201).json({
+    success: true,
+    message: 'Health record added successfully.',
+    record,
+  });
 });
 
 /**
@@ -61,46 +61,46 @@ export const createHealthRecord = asyncErrorHandler(async (req, res) => {
  * @desc    Get all health records for a pet, optionally filtered by ?type=
  */
 export const getHealthRecords = asyncErrorHandler(async (req, res) => {
-    const { petId } = req.params;
-    await getAuthorizedPet(petId, req.user);
+  const { petId } = req.params;
+  await getAuthorizedPet(petId, req.user);
 
-    const filter = { pet: petId, isActive: true };
-    if (req.query.type) {
-      filter.type = req.query.type;
-    }
+  const filter = { pet: petId, isActive: true };
+  if (req.query.type) {
+    filter.type = req.query.type;
+  }
 
-    const records = await HealthRecord.find(filter)
-      .sort({ dateAdministered: -1, createdAt: -1 })
-      .populate('addedBy', 'name role');
+  const records = await HealthRecord.find(filter)
+    .sort({ dateAdministered: -1, createdAt: -1 })
+    .populate('addedBy', 'name role');
 
-    res.status(200).json({
-      success: true,
-      count: records.length,
-      records,
-    });
+  res.status(200).json({
+    success: true,
+    count: records.length,
+    records,
+  });
 });
 
 /**
  * @route   GET /api/pets/:petId/health-records/:recordId
  */
 export const getHealthRecordById = asyncErrorHandler(async (req, res) => {
-    const { petId, recordId } = req.params;
-    await getAuthorizedPet(petId, req.user);
+  const { petId, recordId } = req.params;
+  await getAuthorizedPet(petId, req.user);
 
-    const record = await HealthRecord.findOne({
-      _id: recordId,
-      pet: petId,
-      isActive: true,
-    }).populate('addedBy', 'name role');
+  const record = await HealthRecord.findOne({
+    _id: recordId,
+    pet: petId,
+    isActive: true,
+  }).populate('addedBy', 'name role');
 
-    if (!record) {
-      throw new AppError('Health record not found.', 404);
-    }
+  if (!record) {
+    throw new AppError('Health record not found.', 404);
+  }
 
-    res.status(200).json({
-      success: true,
-      record,
-    });
+  res.status(200).json({
+    success: true,
+    record,
+  });
 
 });
 
@@ -109,33 +109,37 @@ export const getHealthRecordById = asyncErrorHandler(async (req, res) => {
  * @desc    Update a health record (owner or vet who can access the pet)
  */
 export const updateHealthRecord = asyncErrorHandler(async (req, res) => {
-    const { petId, recordId } = req.params;
-    await getAuthorizedPet(petId, req.user);
+  const { petId, recordId } = req.params;
+  await getAuthorizedPet(petId, req.user);
 
-    const record = await HealthRecord.findOne({
-      _id: recordId,
-      pet: petId,
-      isActive: true,
-    });
+  const record = await HealthRecord.findOne({
+    _id: recordId,
+    pet: petId,
+    isActive: true,
+  });
 
-    if (!record) {
-      throw new AppError('Health record not found.', 404);
+  if (!record) {
+    throw new AppError('Health record not found.', 404);
+  }
+
+  const allowedFields = ['type', 'title', 'description', 'dateAdministered', 'nextDueDate', 'severity'];
+  allowedFields.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      record[field] = req.body[field];
     }
+  });
 
-    const allowedFields = ['type', 'title', 'description', 'dateAdministered', 'nextDueDate', 'severity'];
-    allowedFields.forEach((field) => {
-      if (req.body[field] !== undefined) {
-        record[field] = req.body[field];
-      }
-    });
+  if (req.body.nextDueDate !== undefined) {
+    record.reminderSentAt = undefined; // new due date → allow a fresh reminder
+  }
 
-    await record.save();
+  await record.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Health record updated successfully.',
-      record,
-    });
+  res.status(200).json({
+    success: true,
+    message: 'Health record updated successfully.',
+    record,
+  });
 });
 
 /**
@@ -143,24 +147,24 @@ export const updateHealthRecord = asyncErrorHandler(async (req, res) => {
  * @desc    Soft-delete a health record
  */
 export const deleteHealthRecord = asyncErrorHandler(async (req, res) => {
-    const { petId, recordId } = req.params;
-    await getAuthorizedPet(petId, req.user);
+  const { petId, recordId } = req.params;
+  await getAuthorizedPet(petId, req.user);
 
-    const record = await HealthRecord.findOne({
-      _id: recordId,
-      pet: petId,
-      isActive: true,
-    });
+  const record = await HealthRecord.findOne({
+    _id: recordId,
+    pet: petId,
+    isActive: true,
+  });
 
-    if (!record) {
-      throw new AppError('Health record not found.', 404);
-    }
+  if (!record) {
+    throw new AppError('Health record not found.', 404);
+  }
 
-    record.isActive = false;
-    await record.save();
+  record.isActive = false;
+  await record.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Health record deleted successfully.',
-    });
+  res.status(200).json({
+    success: true,
+    message: 'Health record deleted successfully.',
+  });
 });

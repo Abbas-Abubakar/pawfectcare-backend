@@ -152,6 +152,7 @@ export const rescheduleAppointment = asyncErrorHandler(async (req, res, next) =>
   appointment.startTime = newSlot.startTime;
   appointment.endTime = newSlot.endTime;
   appointment.status = 'pending'; // requires vet re-confirmation after a change
+  appointment.reminderSent = false;
   await appointment.save();
 
   res.status(200).json({

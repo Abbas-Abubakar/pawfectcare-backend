@@ -34,6 +34,10 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    reminderSent: {
+      type: Boolean,
+      default: false,
+    },
     reason: {
       type: String,
       trim: true,

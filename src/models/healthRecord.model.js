@@ -30,7 +30,10 @@ const healthRecordSchema = new mongoose.Schema(
       type: Date, // when the vaccine/treatment was given (not relevant for 'allergy' type)
     },
     nextDueDate: {
-      type: Date, // drives reminders, e.g. next vaccine booster due
+      type: Date,
+    },
+    reminderSentAt: {
+      type: Date, // tracks when we last sent a reminder for the CURRENT nextDueDate
     },
     severity: {
       type: String,

@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const requiredEnvVars = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS','CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+const requiredEnvVars = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
 
 for (const key of requiredEnvVars) {
   if (!process.env[key]) {
@@ -33,6 +33,14 @@ export const env = {
   otp: {
     secret: process.env.OTP_SECRET,
     expiryMs: process.env.OTP_EXPIRY_MS ? parseInt(process.env.OTP_EXPIRY_MS) : 5 * 60 * 1000,
+  },
+  shelterInfo: {
+    address: process.env.SHELTER_ADDRESS || '',
+    lat: Number(process.env.SHELTER_LAT) || 0,
+    lng: Number(process.env.SHELTER_LNG) || 0,
+    phone: process.env.SHELTER_PHONE || '',
+    email: process.env.SHELTER_EMAIL || '',
+    hours: process.env.SHELTER_HOURS || '',
   },
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
 };
