@@ -6,30 +6,30 @@ import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import mongoSanitize from 'express-mongo-sanitize';
 
-import { env } from './src/config/env.js';
-import { globalErrorHandler } from './src/middleware/errorHandler.js';
-import { generalLimiter } from './src/middleware/rateLimiter.middleware.js';
-import { sanitizeInput } from './src/middleware/sanitize.middleware.js';
+import { env } from './config/env.js';
+import { globalErrorHandler } from './middleware/errorHandler.js';
+import { generalLimiter } from './middleware/rateLimiter.middleware.js';
+import { sanitizeInput } from './middleware/sanitize.middleware.js';
 
-import authRoutes from './src/routes/auth.routes.js'
-import petRoutes from './src/routes/pet.routes.js'
-import vetAvailabilityRoutes from './src/routes/vetAvailability.routes.js'
-import appointmentRoutes from './src/routes/appointment.routes.js'
-import productRoutes from './src/routes/product.routes.js'
-import wishlistRoutes from './src/routes/wishlist.routes.js'
-import bookmarkRoutes from './src/routes/bookmark.routes.js'
-import blogPostRoutes from './src/routes/blogPost.routes.js'
-import vetDashboardRoutes from './src/routes/vetDashboard.routes.js'
-import adoptionListingRoutes from './src/routes/adoptionListing.routes.js';
-import adoptionRequestRoutes from './src/routes/adoptionRequest.routes.js';
-import successStoryRoutes from './src/routes/successStory.routes.js';
-import contactMessageRoutes from './src/routes/contactMessage.routes.js';
-import notificationRoutes from './src/routes/notification.routes.js';
-import userRoutes from './src/routes/user.routes.js';
-import searchRoutes from './src/routes/search.routes.js';
-import contactInfoRoutes from './src/routes/contactInfo.routes.js';
-import AppError from './src/utils/appError.utils.js';
-import healthRoutes from './src/routes/health.routes.js';
+import authRoutes from './routes/auth.routes.js'
+import petRoutes from './routes/pet.routes.js'
+import vetAvailabilityRoutes from './routes/vetAvailability.routes.js'
+import appointmentRoutes from './routes/appointment.routes.js'
+import productRoutes from './routes/product.routes.js'
+import wishlistRoutes from './routes/wishlist.routes.js'
+import bookmarkRoutes from './routes/bookmark.routes.js'
+import blogPostRoutes from './routes/blogPost.routes.js'
+import vetDashboardRoutes from './routes/vetDashboard.routes.js'
+import adoptionListingRoutes from './routes/adoptionListing.routes.js';
+import adoptionRequestRoutes from './routes/adoptionRequest.routes.js';
+import successStoryRoutes from './routes/successStory.routes.js';
+import contactMessageRoutes from './routes/contactMessage.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import userRoutes from './routes/user.routes.js';
+import searchRoutes from './routes/search.routes.js';
+import contactInfoRoutes from './routes/contactInfo.routes.js';
+import AppError from './utils/appError.utils.js';
+import healthRoutes from './routes/health.routes.js';
 
 const app = express();
 

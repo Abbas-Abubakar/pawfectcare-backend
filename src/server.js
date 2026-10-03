@@ -1,7 +1,7 @@
 import app from "./app.js";
-import { connectDB } from "./src/config/db.js"
-import { env } from "./src/config/env.js";
-import { startReminderJob } from "./src/jobs/reminder.job.js";
+import { connectDB } from "./config/db.js"
+import { env } from "./config/env.js";
+import { startReminderJob } from "./jobs/reminder.job.js";
 
 
 const startServer = async () => {

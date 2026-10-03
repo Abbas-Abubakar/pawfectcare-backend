@@ -2,10 +2,10 @@
   "name": "pawfectcare-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./src/index.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "nodemon ./src/server.js",
     "create-search-indexes": "node src/scripts/createSearchIndexes.js",
     "seed": "node src/scripts/seed.js"
   },
