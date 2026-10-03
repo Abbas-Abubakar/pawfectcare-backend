@@ -40,7 +40,7 @@ const blogPostSchema = new mongoose.Schema(
   }
 );
 
-blogPostSchema.index({ title: 'text', content: 'text', excerpt: 'text' });
+
 blogPostSchema.index({ category: 1 });
 
 const BlogPost = mongoose.model('BlogPost', blogPostSchema);

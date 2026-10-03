@@ -60,7 +60,7 @@ const adoptionListingSchema = new mongoose.Schema(
 );
 
 adoptionListingSchema.index({ species: 1, status: 1 });
-adoptionListingSchema.index({ name: 'text', description: 'text', breed: 'text' });
+
 
 const AdoptionListing = mongoose.model('AdoptionListing', adoptionListingSchema);
 

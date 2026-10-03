@@ -2,6 +2,7 @@ import SuccessStory from '../models/successStory.model.js';
 import AdoptionRequest from '../models/adoptionRequest.model.js';
 import AppError from '../utils/appError.utils.js';
 import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.utils.js';
+import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
 
 /**
  * @route   POST /api/success-stories

@@ -40,7 +40,7 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-productSchema.index({ name: 'text', description: 'text' }); // enables text search
+
 productSchema.index({ category: 1 });
 
 const Product = mongoose.model('Product', productSchema);

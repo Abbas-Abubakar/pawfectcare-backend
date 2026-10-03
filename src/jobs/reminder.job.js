@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import HealthRecord from '../models/healthRecord.model.js';
 import Appointment from '../models/appointment.model.js';
-import { createNotification } from '../utils/notification.utils.js';
+import { createNotification } from '../utils/notify.utils.js';
 
 /**
  * Finds health records due within the next 3 days that haven't had a

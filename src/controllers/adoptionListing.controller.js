@@ -2,7 +2,7 @@ import AdoptionListing from '../models/adoptionListing.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
-
+import { buildTextSearchStage } from '../utils/atlasSearch.utils.js';
 /**
  * @route   POST /api/adoptions
  * @desc    Shelter admin creates a new adoption listing, with multiple photos
@@ -51,22 +51,46 @@ export const createListing = asyncErrorHandler(async (req, res) => {
  */
 export const getListings = asyncErrorHandler(async (req, res) => {
   
-    const { species, status, search } = req.query;
-    const filter = { isActive: true };
+   const { species, status, search } = req.query;
 
-    if (species) filter.species = species;
-    filter.status = status || 'available'; // default to only showing available pets
-    if (search) filter.$text = { $search: search };
+    const matchFilter = { isActive: true };
+    if (species) matchFilter.species = species;
+    matchFilter.status = status || 'available';
 
-    const listings = await AdoptionListing.find(filter)
-      .populate('shelter', 'name email phone')
-      .sort({ createdAt: -1 });
+    let listings;
+
+    if (search) {
+      listings = await AdoptionListing.aggregate([
+        buildTextSearchStage('adoption_search', search, [
+          { path: 'name', boost: 3 },
+          { path: 'breed', boost: 2 },
+          { path: 'description', boost: 1 },
+        ]),
+        { $match: matchFilter },
+        { $addFields: { score: { $meta: 'searchScore' } } },
+        { $sort: { score: -1 } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'shelter',
+            foreignField: '_id',
+            as: 'shelter',
+          },
+        },
+        { $unwind: '$shelter' },
+        { $project: { 'shelter.name': 1, 'shelter.email': 1, 'shelter.phone': 1, name: 1, species: 1, breed: 1, age: 1, gender: 1, description: 1, temperament: 1, photos: 1, status: 1, createdAt: 1, score: 1 } },
+      ]);
+    } else {
+      listings = await AdoptionListing.find(matchFilter)
+        .populate('shelter', 'name email phone')
+        .sort({ createdAt: -1 });
+    }
 
     res.status(200).json({
       success: true,
       count: listings.length,
       listings,
-    });
+    })
 
 });
 

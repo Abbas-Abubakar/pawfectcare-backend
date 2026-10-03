@@ -23,6 +23,8 @@ import successStoryRoutes from './src/routes/successStory.routes.js';
 import contactMessageRoutes from './src/routes/contactMessage.routes.js';
 import notificationRoutes from './src/routes/notification.routes.js';
 import userRoutes from './src/routes/user.routes.js';
+import searchRoutes from './src/routes/search.routes.js';
+import contactInfoRoutes from './src/routes/contactInfo.routes.js';
 import AppError from './src/utils/appError.utils.js'; 
 import healthRoutes from './src/routes/health.routes.js'; 
 
@@ -65,6 +67,8 @@ app.use('/api/success-stories', successStoryRoutes);
 app.use('/api/contact', contactMessageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/contact-info', contactInfoRoutes);
 // 404 + error handling (must be last)
 app.all("/{*splat}", (req, res, next) => {
   const err = new AppError(`Route not found: ${req.originalUrl}`, 404);

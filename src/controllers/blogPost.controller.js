@@ -2,7 +2,7 @@ import BlogPost from '../models/blogPost.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
-
+import { buildTextSearchStage } from '../utils/atlasSearch.utils.js';
 /**
  * @route   POST /api/blog
  * @desc    Create a blog post (veterinarian or shelter_admin)
@@ -41,17 +41,40 @@ export const createBlogPost = asyncErrorHandler(async (req, res, next) => {
  * @route   GET /api/blog
  * @desc    Browse/search blog posts — supports ?category=, ?search=
  */
-export const getBlogPosts = asyncErrorHandler(async (req, res, next) => {
+export const getBlogPosts = asyncErrorHandler(async (req, res) => {
 
   const { category, search } = req.query;
-  const filter = { isActive: true };
+  const matchFilter = { isActive: true };
+  if (category) matchFilter.category = category;
 
-  if (category) filter.category = category;
-  if (search) filter.$text = { $search: search };
+  let posts;
 
-  const posts = await BlogPost.find(filter)
-    .populate('author', 'name role')
-    .sort({ createdAt: -1 });
+  if (search) {
+    posts = await BlogPost.aggregate([
+      buildTextSearchStage('blog_search', search, [
+        { path: 'title', boost: 3 },
+        { path: 'excerpt', boost: 2 },
+        { path: 'content', boost: 1 },
+      ]),
+      { $match: matchFilter },
+      { $addFields: { score: { $meta: 'searchScore' } } },
+      { $sort: { score: -1 } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'author',
+        },
+      },
+      { $unwind: '$author' },
+      { $project: { 'author.name': 1, 'author.role': 1, title: 1, content: 1, excerpt: 1, category: 1, coverImage: 1, createdAt: 1, score: 1 } },
+    ]);
+  } else {
+    posts = await BlogPost.find(matchFilter)
+      .populate('author', 'name role')
+      .sort({ createdAt: -1 });
+  }
 
   res.status(200).json({
     success: true,
@@ -64,7 +87,7 @@ export const getBlogPosts = asyncErrorHandler(async (req, res, next) => {
 /**
  * @route   GET /api/blog/:id
  */
-export const getBlogPostById = asyncErrorHandler(async (req, res, next) => {
+export const getBlogPostById = asyncErrorHandler(async (req, res) => {
 
   const post = await BlogPost.findOne({ _id: req.params.id, isActive: true }).populate(
     'author',
@@ -86,7 +109,7 @@ export const getBlogPostById = asyncErrorHandler(async (req, res, next) => {
  * @route   PATCH /api/blog/:id
  * @desc    Update a blog post (author only)
  */
-export const updateBlogPost = asyncErrorHandler(async (req, res, next) => {
+export const updateBlogPost = asyncErrorHandler(async (req, res) => {
 
   const post = await BlogPost.findOne({ _id: req.params.id, isActive: true });
 
@@ -127,7 +150,7 @@ export const updateBlogPost = asyncErrorHandler(async (req, res, next) => {
  * @route   DELETE /api/blog/:id
  * @desc    Soft-delete a blog post (author only)
  */
-export const deleteBlogPost = asyncErrorHandler(async (req, res, next) => {
+export const deleteBlogPost = asyncErrorHandler(async (req, res) => {
 
   const post = await BlogPost.findOne({ _id: req.params.id, isActive: true });
 

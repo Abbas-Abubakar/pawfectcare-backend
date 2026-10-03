@@ -1,6 +1,7 @@
 import Product from '../models/product.model.js';
 import AppError from '../utils/appError.utils.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
+import { buildTextSearchStage } from '../utils/atlasSearch.utils.js';
 import asyncErrorHandler from "../utils/asyncErrorHandler.utils.js"
 
 /**
@@ -37,24 +38,37 @@ export const createProduct = asyncErrorHandler(async (req, res) => {
  */
 export const getProducts = asyncErrorHandler(async (req, res) => {
 
-  const { category, search, minPrice, maxPrice } = req.query;
-  const filter = { isActive: true };
+   const { category, search, minPrice, maxPrice } = req.query;
 
-  if (category) filter.category = category;
-  if (search) filter.$text = { $search: search };
-  if (minPrice || maxPrice) {
-    filter.price = {};
-    if (minPrice) filter.price.$gte = Number(minPrice);
-    if (maxPrice) filter.price.$lte = Number(maxPrice);
-  }
+    const matchFilter = { isActive: true };
+    if (category) matchFilter.category = category;
+    if (minPrice || maxPrice) {
+      matchFilter.price = {};
+      if (minPrice) matchFilter.price.$gte = Number(minPrice);
+      if (maxPrice) matchFilter.price.$lte = Number(maxPrice);
+    }
 
-  const products = await Product.find(filter).sort({ createdAt: -1 });
+    let products;
 
-  res.status(200).json({
-    success: true,
-    count: products.length,
-    products,
-  });
+    if (search) {
+      products = await Product.aggregate([
+        buildTextSearchStage('product_search', search, [
+          { path: 'name', boost: 3 },
+          { path: 'description', boost: 1 },
+        ]),
+        { $match: matchFilter },
+        { $addFields: { score: { $meta: 'searchScore' } } },
+        { $sort: { score: -1 } },
+      ]);
+    } else {
+      products = await Product.find(matchFilter).sort({ createdAt: -1 });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
 
 });
 
