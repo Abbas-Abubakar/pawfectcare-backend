@@ -1,7 +1,7 @@
 import Notification from '../models/notification.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
-
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 /**
  * @route   GET /api/notifications
  * @desc    Get the logged-in user's notifications, newest first
@@ -9,14 +9,22 @@ import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
 export const getMyNotifications = asyncErrorHandler(async (req, res) => {
 
   const filter = { user: req.user._id };
+  const { page, limit, skip } = getPagination(req.query);
   if (req.query.unreadOnly === 'true') filter.isRead = false;
 
-  const notifications = await Notification.find(filter).sort({ createdAt: -1 }).limit(50);
+  const [notifications, totalCount] = await Promise.all([
+    Notification.find(filter)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }),
+    Notification.countDocuments(filter),
+  ]);
   const unreadCount = await Notification.countDocuments({ user: req.user._id, isRead: false });
 
   res.status(200).json({
     success: true,
     count: notifications.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     unreadCount,
     notifications,
   });

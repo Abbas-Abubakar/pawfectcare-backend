@@ -4,6 +4,7 @@ import Pet from '../models/pet.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * @route   POST /api/appointments/:appointmentId/medical-record

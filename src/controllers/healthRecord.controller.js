@@ -2,6 +2,7 @@ import HealthRecord from '../models/healthRecord.model.js';
 import Pet from '../models/pet.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * Shared helper: confirms the pet exists and the requester is allowed to
@@ -63,22 +64,30 @@ export const createHealthRecord = asyncErrorHandler(async (req, res) => {
 export const getHealthRecords = asyncErrorHandler(async (req, res) => {
   const { petId } = req.params;
   await getAuthorizedPet(petId, req.user);
+   const { page, limit, skip } = getPagination(req.query);
 
   const filter = { pet: petId, isActive: true };
   if (req.query.type) {
     filter.type = req.query.type;
   }
 
-  const records = await HealthRecord.find(filter)
-    .sort({ dateAdministered: -1, createdAt: -1 })
-    .populate('addedBy', 'name role');
+  const [records, totalCount] = await Promise.all([
+    HealthRecord.find(filter)
+      .sort({ dateAdministered: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('addedBy', 'name role'),
+    HealthRecord.countDocuments(filter),
+  ]);
 
   res.status(200).json({
     success: true,
     count: records.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     records,
   });
-});
+}); 
+ 
 
 /**
  * @route   GET /api/pets/:petId/health-records/:recordId

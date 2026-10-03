@@ -3,6 +3,7 @@ import AppError from '../utils/appError.utils.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
 import { buildTextSearchStage } from '../utils/atlasSearch.utils.js';
 import asyncErrorHandler from "../utils/asyncErrorHandler.utils.js"
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * @route   POST /api/products
@@ -36,40 +37,54 @@ export const createProduct = asyncErrorHandler(async (req, res) => {
  * @route   GET /api/products
  * @desc    Browse products — supports ?category=, ?search=, ?minPrice=, ?maxPrice=
  */
+
 export const getProducts = asyncErrorHandler(async (req, res) => {
+  const { category, search, minPrice, maxPrice } = req.query;
+  const { page, limit, skip } = getPagination(req.query);
 
-   const { category, search, minPrice, maxPrice } = req.query;
+  const matchFilter = { isActive: true };
+  if (category) matchFilter.category = category;
+  if (minPrice || maxPrice) {
+    matchFilter.price = {};
+    if (minPrice) matchFilter.price.$gte = Number(minPrice);
+    if (maxPrice) matchFilter.price.$lte = Number(maxPrice);
+  }
 
-    const matchFilter = { isActive: true };
-    if (category) matchFilter.category = category;
-    if (minPrice || maxPrice) {
-      matchFilter.price = {};
-      if (minPrice) matchFilter.price.$gte = Number(minPrice);
-      if (maxPrice) matchFilter.price.$lte = Number(maxPrice);
-    }
+  let products;
+  let totalCount;
 
-    let products;
+  if (search) {
+    const pipeline = [
+      buildTextSearchStage('product_search', search, [
+        { path: 'name', boost: 3 },
+        { path: 'description', boost: 1 },
+      ]),
+      { $match: matchFilter },
+      { $addFields: { score: { $meta: 'searchScore' } } },
+      { $sort: { score: -1 } },
+    ];
 
-    if (search) {
-      products = await Product.aggregate([
-        buildTextSearchStage('product_search', search, [
-          { path: 'name', boost: 3 },
-          { path: 'description', boost: 1 },
-        ]),
-        { $match: matchFilter },
-        { $addFields: { score: { $meta: 'searchScore' } } },
-        { $sort: { score: -1 } },
-      ]);
-    } else {
-      products = await Product.find(matchFilter).sort({ createdAt: -1 });
-    }
+    // Run count and page-fetch as two aggregations sharing the same pipeline so far
+    const [countResult, pagedResults] = await Promise.all([
+      Product.aggregate([...pipeline, { $count: 'total' }]),
+      Product.aggregate([...pipeline, { $skip: skip }, { $limit: limit }]),
+    ]);
 
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      products,
-    });
+    totalCount = countResult[0]?.total || 0;
+    products = pagedResults;
+  } else {
+    [products, totalCount] = await Promise.all([
+      Product.find(matchFilter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Product.countDocuments(matchFilter),
+    ]);
+  }
 
+  res.status(200).json({
+    success: true,
+    count: products.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
+    products,
+  });
 });
 
 /**

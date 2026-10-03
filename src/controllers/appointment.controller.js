@@ -4,6 +4,7 @@ import Pet from '../models/pet.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
 import { createNotification } from '../utils/notify.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * @route   POST /api/appointments
@@ -58,20 +59,27 @@ export const bookAppointment = asyncErrorHandler(async (req, res) => {
  */
 export const getMyAppointments = asyncErrorHandler(async (req, res) => {
   const filter = { owner: req.user._id };
+  const { page, limit, skip } = getPagination(req.query);
   if (req.query.status) filter.status = req.query.status;
 
-  const appointments = await Appointment.find(filter)
-    .populate('pet', 'name species photo')
-    .populate('vet', 'name email')
-    .sort({ date: -1 });
+  const [appointments, totalCount] = await Promise.all([
+    Appointment.find(filter)
+      .populate('pet', 'name species photo')
+      .populate('vet', 'name email')
+      .skip(skip)
+      .limit(limit),
+    Appointment.countDocuments(filter),
+  ]);
 
   res.status(200).json({
     success: true,
     count: appointments.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     appointments,
   });
 
 });
+
 
 /**
  * @route   GET /api/appointments/:id

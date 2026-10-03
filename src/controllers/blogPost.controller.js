@@ -3,6 +3,7 @@ import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
 import { buildTextSearchStage } from '../utils/atlasSearch.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 /**
  * @route   POST /api/blog
  * @desc    Create a blog post (veterinarian or shelter_admin)
@@ -44,13 +45,15 @@ export const createBlogPost = asyncErrorHandler(async (req, res, next) => {
 export const getBlogPosts = asyncErrorHandler(async (req, res) => {
 
   const { category, search } = req.query;
+  const { page, limit, skip } = getPagination(req.query);
   const matchFilter = { isActive: true };
   if (category) matchFilter.category = category;
 
   let posts;
+  let totalCount;
 
   if (search) {
-    posts = await BlogPost.aggregate([
+    const pipeline = [
       buildTextSearchStage('blog_search', search, [
         { path: 'title', boost: 3 },
         { path: 'excerpt', boost: 2 },
@@ -69,16 +72,27 @@ export const getBlogPosts = asyncErrorHandler(async (req, res) => {
       },
       { $unwind: '$author' },
       { $project: { 'author.name': 1, 'author.role': 1, title: 1, content: 1, excerpt: 1, category: 1, coverImage: 1, createdAt: 1, score: 1 } },
+    ]
+
+    const [countResult, pagedResults] = await Promise.all([
+      BlogPost.aggregate([...pipeline, { $count: 'totalCount' }]),
+      BlogPost.aggregate([...pipeline, { $skip: skip }, { $limit: limit }]),
     ]);
+    totalCount = countResult[0]?.totalCount || 0;
+    posts = pagedResults;
   } else {
-    posts = await BlogPost.find(matchFilter)
-      .populate('author', 'name role')
-      .sort({ createdAt: -1 });
+    [posts, totalCount] = await Promise.all([
+      BlogPost.find(matchFilter)
+        .populate('author', 'name role')
+        .sort({ createdAt: -1 }),
+      BlogPost.countDocuments(matchFilter),
+    ]);
   }
 
   res.status(200).json({
     success: true,
     count: posts.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     posts,
   });
 

@@ -3,6 +3,7 @@ import AdoptionRequest from '../models/adoptionRequest.model.js';
 import AppError from '../utils/appError.utils.js';
 import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * @route   POST /api/success-stories
@@ -68,15 +69,21 @@ export const createStory = asyncErrorHandler(async (req, res) => {
 export const getStories = asyncErrorHandler(async (req, res) => {
 
     const filter = { isActive: true };
+    const { page, limit, skip } = getPagination(req.query);
     if (req.query.search) filter.$text = { $search: req.query.search };
 
-    const stories = await SuccessStory.find(filter)
-      .populate('shelter', 'name')
-      .sort({ createdAt: -1 });
+    const [stories, totalCount] = await Promise.all([
+      SuccessStory.find(filter)
+        .populate('shelter', 'name')
+        .skip(skip)
+        .limit(limit),
+      SuccessStory.countDocuments(filter),
+    ]);
 
     res.status(200).json({
       success: true,
       count: stories.length,
+      pagination: buildPaginationMeta(page, limit, totalCount),
       stories,
     });
 });

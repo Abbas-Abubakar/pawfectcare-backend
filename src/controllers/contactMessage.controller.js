@@ -1,6 +1,7 @@
 import ContactMessage from '../models/contactMessage.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * @route   POST /api/contact
@@ -42,14 +43,22 @@ export const submitMessage = asyncErrorHandler(async (req, res) => {
 export const getMessages = asyncErrorHandler(async (req, res) => {
 
     const filter = {};
+    const { page, limit, skip } = getPagination(req.query);
     if (req.query.type) filter.type = req.query.type;
     if (req.query.status) filter.status = req.query.status;
 
-    const messages = await ContactMessage.find(filter).sort({ createdAt: -1 });
+    const [messages, totalCount] = await Promise.all([
+      ContactMessage.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }),
+      ContactMessage.countDocuments(filter),
+    ]);
 
     res.status(200).json({
       success: true,
       count: messages.length,
+      pagination: buildPaginationMeta(page, limit, totalCount),
       messages,
     });
 

@@ -6,6 +6,7 @@ import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
 import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.utils.js'
 import cloudinary from '../config/cloudinary.js'
 import { createNotification } from '../utils/notify.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 /**
  * @route   POST /api/adoptions/:listingId/requests
  * @desc    Pet owner applies to adopt a listed pet
@@ -56,17 +57,24 @@ export const getMyRequests = asyncErrorHandler(async (req, res) => {
   const filter = { applicant: req.user._id };
   if (req.query.status) filter.status = req.query.status;
 
-  const requests = await AdoptionRequest.find(filter)
-    .populate('listing', 'name species breed photos status')
-    .sort({ createdAt: -1 });
+  const { page, limit, skip } = getPagination(req.query);
+  const [requests, totalCount] = await Promise.all([
+    AdoptionRequest.find(filter)
+      .populate('listing', 'name species breed photos status')
+      .skip(skip)
+      .limit(limit),
+    AdoptionRequest.countDocuments(filter),
+  ]);
 
   res.status(200).json({
     success: true,
     count: requests.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     requests,
   });
 
 });
+
 
 /**
  * @route   PATCH /api/adoptions/requests/:id/withdraw
@@ -104,6 +112,7 @@ export const withdrawRequest = asyncErrorHandler(async (req, res) => {
 export const getRequestsForListing = asyncErrorHandler(async (req, res) => {
 
   const { listingId } = req.params;
+  const { page, limit, skip } = getPagination(req.query);
 
   const listing = await AdoptionListing.findOne({ _id: listingId, shelter: req.user._id });
   if (!listing) {
@@ -113,13 +122,18 @@ export const getRequestsForListing = asyncErrorHandler(async (req, res) => {
   const filter = { listing: listingId };
   if (req.query.status) filter.status = req.query.status;
 
-  const requests = await AdoptionRequest.find(filter)
-    .populate('applicant', 'name email phone')
-    .sort({ createdAt: -1 });
+  const [requests, totalCount] = await Promise.all([
+    AdoptionRequest.find(filter)
+      .populate('listing', 'name species breed photos status')
+      .skip(skip)
+      .limit(limit),
+    AdoptionRequest.countDocuments(filter),
+  ]);
 
   res.status(200).json({
     success: true,
     count: requests.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     requests,
   });
 });

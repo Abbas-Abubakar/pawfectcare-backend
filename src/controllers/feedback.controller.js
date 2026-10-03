@@ -1,6 +1,7 @@
 import Feedback from '../models/feedback.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 /**
  * @route   POST /api/feedback
  */
@@ -28,11 +29,20 @@ export const submitFeedback = asyncErrorHandler(async (req, res) => {
  */
 export const getAllFeedback = asyncErrorHandler(async (req, res) => {
 
-  const feedback = await Feedback.find().populate('user', 'name role').sort({ createdAt: -1 });
+  const { page, limit, skip } = getPagination(req.query);
+  const [feedback, totalCount] = await Promise.all([
+    Feedback.find()
+      .populate('user', 'name role')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }),
+    Feedback.countDocuments(),
+  ]);
 
   res.status(200).json({
     success: true,
     count: feedback.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     feedback,
   });
 

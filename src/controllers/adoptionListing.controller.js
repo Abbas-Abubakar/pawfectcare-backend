@@ -3,6 +3,7 @@ import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
 import { buildTextSearchStage } from '../utils/atlasSearch.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 /**
  * @route   POST /api/adoptions
  * @desc    Shelter admin creates a new adoption listing, with multiple photos
@@ -10,6 +11,7 @@ import { buildTextSearchStage } from '../utils/atlasSearch.utils.js';
 export const createListing = asyncErrorHandler(async (req, res) => {
 
     const { name, species, breed, age, gender, description, temperament } = req.body;
+   
 
     if (!name || !species) {
       throw new AppError('Name and species are required.', 400);
@@ -52,15 +54,17 @@ export const createListing = asyncErrorHandler(async (req, res) => {
 export const getListings = asyncErrorHandler(async (req, res) => {
   
    const { species, status, search } = req.query;
+    const { page, limit, skip } = getPagination(req.query);
 
     const matchFilter = { isActive: true };
     if (species) matchFilter.species = species;
     matchFilter.status = status || 'available';
 
     let listings;
+    let totalCount;
 
     if (search) {
-      listings = await AdoptionListing.aggregate([
+      const pipeline = [
         buildTextSearchStage('adoption_search', search, [
           { path: 'name', boost: 3 },
           { path: 'breed', boost: 2 },
@@ -79,16 +83,27 @@ export const getListings = asyncErrorHandler(async (req, res) => {
         },
         { $unwind: '$shelter' },
         { $project: { 'shelter.name': 1, 'shelter.email': 1, 'shelter.phone': 1, name: 1, species: 1, breed: 1, age: 1, gender: 1, description: 1, temperament: 1, photos: 1, status: 1, createdAt: 1, score: 1 } },
+      ];
+
+      const [countResult, pagedResults] = await Promise.all([
+        AdoptionListing.aggregate([...pipeline, { $count: 'total' }]),
+        AdoptionListing.aggregate([...pipeline, { $skip: skip }, { $limit: limit }]),
       ]);
+      totalCount = countResult[0]?.total || 0;
+      listings = pagedResults;
     } else {
-      listings = await AdoptionListing.find(matchFilter)
-        .populate('shelter', 'name email phone')
-        .sort({ createdAt: -1 });
+      [listings, totalCount] = await Promise.all([
+        AdoptionListing.find(matchFilter)
+          .populate('shelter', 'name email phone')
+          .sort({ createdAt: -1 }),
+        AdoptionListing.countDocuments(matchFilter),
+      ]);
     }
 
     res.status(200).json({
       success: true,
       count: listings.length,
+      pagination: buildPaginationMeta(page, limit, totalCount),
       listings,
     })
 

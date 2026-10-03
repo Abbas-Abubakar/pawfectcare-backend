@@ -1,6 +1,7 @@
 import Appointment from '../models/appointment.model.js';
 import Pet from '../models/pet.model.js'
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 /**
  * @route   GET /api/vet/dashboard/today
  * @desc    Vet's appointments for today
@@ -36,6 +37,7 @@ export const getTodayAppointments = asyncErrorHandler(async (req, res) => {
 export const getVetAppointments = asyncErrorHandler(async (req, res) => {
 
   const filter = { vet: req.user._id };
+  const { page, limit, skip } = getPagination(req.query);
 
   if (req.query.status) filter.status = req.query.status;
   if (req.query.from || req.query.to) {
@@ -44,14 +46,19 @@ export const getVetAppointments = asyncErrorHandler(async (req, res) => {
     if (req.query.to) filter.date.$lte = new Date(req.query.to);
   }
 
-  const appointments = await Appointment.find(filter)
-    .populate('pet', 'name species breed photo')
-    .populate('owner', 'name phone email')
-    .sort({ date: -1, startTime: 1 });
+  const [appointments, totalCount] = await Promise.all([
+    Appointment.find(filter)
+      .populate('pet', 'name species breed photo')
+      .populate('owner', 'name phone email')
+      .skip(skip)
+      .limit(limit),
+    Appointment.countDocuments(filter),
+  ]);
 
   res.status(200).json({
     success: true,
     count: appointments.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     appointments,
   });
 
@@ -65,15 +72,20 @@ export const getAssignedPets = asyncErrorHandler(async (req, res) => {
 
   // Find distinct pet IDs from this vet's appointment history, then fetch full pet docs
   const petIds = await Appointment.distinct('pet', { vet: req.user._id });
+  const { page, limit, skip } = getPagination(req.query);
 
-  const pets = await Pet.find({ _id: { $in: petIds }, isActive: true }).populate(
-    'owner',
-    'name email phone'
-  );
+  const [pets, totalCount] = await Promise.all([
+    Pet.find({ _id: { $in: petIds }, isActive: true }).populate(
+      'owner',
+      'name email phone'
+    ),
+    Pet.countDocuments({ _id: { $in: petIds }, isActive: true }),
+  ]);
 
   res.status(200).json({
     success: true,
     count: pets.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
     pets,
   });
 

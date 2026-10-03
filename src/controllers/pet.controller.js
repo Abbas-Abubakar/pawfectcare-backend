@@ -2,6 +2,7 @@ import Pet from '../models/pet.model.js';
 import AppError from '../utils/appError.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * @route   POST /api/pets
@@ -9,36 +10,36 @@ import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudin
  */
 export const createPet = asyncErrorHandler(async (req, res) => {
 
-    const { name, species, breed, gender, dateOfBirth, weight, color, notes } = req.body;
+  const { name, species, breed, gender, dateOfBirth, weight, color, notes } = req.body;
 
-    if (!name || !species) {
-      throw new AppError('Pet name and species are required.', 400);
-    }
+  if (!name || !species) {
+    throw new AppError('Pet name and species are required.', 400);
+  }
 
-    let photo = { url: '', publicId: '' };
-    if (req.file) {
-      const uploaded = await uploadBufferToCloudinary(req.file.buffer, 'pawfectcare/pets');
-      photo = { url: uploaded.url, publicId: uploaded.publicId };
-    }
+  let photo = { url: '', publicId: '' };
+  if (req.file) {
+    const uploaded = await uploadBufferToCloudinary(req.file.buffer, 'pawfectcare/pets');
+    photo = { url: uploaded.url, publicId: uploaded.publicId };
+  }
 
-    const pet = await Pet.create({
-      owner: req.user._id,
-      name,
-      species,
-      breed,
-      gender,
-      dateOfBirth,
-      weight,
-      color,
-      notes,
-      photo,
-    });
+  const pet = await Pet.create({
+    owner: req.user._id,
+    name,
+    species,
+    breed,
+    gender,
+    dateOfBirth,
+    weight,
+    color,
+    notes,
+    photo,
+  });
 
-    res.status(201).json({
-      success: true,
-      message: 'Pet profile created successfully.',
-      pet,
-    });
+  res.status(201).json({
+    success: true,
+    message: 'Pet profile created successfully.',
+    pet,
+  });
 });
 
 /**
@@ -46,16 +47,22 @@ export const createPet = asyncErrorHandler(async (req, res) => {
  * @desc    Get all pets belonging to the logged-in owner
  */
 export const getMyPets = asyncErrorHandler(async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
 
-    const pets = await Pet.find({ owner: req.user._id, isActive: true }).sort({
-      createdAt: -1,
-    });
+  const [pets, totalCount] = await Promise.all([
+    Pet.find({ owner: req.user._id, isActive: true })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Pet.countDocuments({ owner: req.user._id, isActive: true }),
+  ]);
 
-    res.status(200).json({
-      success: true,
-      count: pets.length,
-      pets,
-    });
+  res.status(200).json({
+    success: true,
+    count: pets.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
+    pets,
+  });
 });
 
 /**
