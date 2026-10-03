@@ -4,10 +4,12 @@ import helmet from 'helmet';
 // import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
+import mongoSanitize from 'express-mongo-sanitize';
 
 import { env } from './src/config/env.js';
 import { globalErrorHandler } from './src/middleware/errorHandler.js';
-import { generalLimiter } from './middleware/rateLimiter.middleware.js';
+import { generalLimiter } from './src/middleware/rateLimiter.middleware.js';
+import { sanitizeInput } from './src/middleware/sanitize.middleware.js';
 
 import authRoutes from './src/routes/auth.routes.js'
 import petRoutes from './src/routes/pet.routes.js'
@@ -26,8 +28,8 @@ import notificationRoutes from './src/routes/notification.routes.js';
 import userRoutes from './src/routes/user.routes.js';
 import searchRoutes from './src/routes/search.routes.js';
 import contactInfoRoutes from './src/routes/contactInfo.routes.js';
-import AppError from './src/utils/appError.utils.js'; 
-import healthRoutes from './src/routes/health.routes.js'; 
+import AppError from './src/utils/appError.utils.js';
+import healthRoutes from './src/routes/health.routes.js';
 
 const app = express();
 
@@ -43,6 +45,7 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(sanitizeInput);
 app.use('/api', generalLimiter);
 
 // Logging

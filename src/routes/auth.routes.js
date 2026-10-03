@@ -1,20 +1,42 @@
-import { Router } from "express";
-import { protect } from "../middleware/auth.middleware.js"
-import { forgotPassowrd, getMe, logOut, refresh, resendOtp, resestPassword, signIn, signUp, verifyOtp } from "../controllers/auth.controller.js";
-import { forgotPasswordLimiter, loginLimiter, otpLimiter, registerLimiter } from "../middleware/rateLimiter.middleware.js";
+import { Router } from 'express';
+import {
+  register,
+  verifyOtp,
+  resendOtp,
+  login,
+  logout,
+  refresh,
+  getMe,
+  forgotPassword,
+  resetPassword,
+} from '../controllers/auth.controller.js';
+import { protect } from '../middleware/auth.middleware.js';
+import {
+  loginLimiter,
+  registerLimiter,
+  otpLimiter,
+  forgotPasswordLimiter,
+} from '../middleware/rateLimiter.middleware.js';
+import { validate } from '../middleware/validate.middlware.js';
+import {
+  registerValidator,
+  loginValidator,
+  verifyOtpValidator,
+  resendOtpValidator,
+  forgotPasswordValidator,
+  resetPasswordValidator,
+} from '../validators/auth.validator.js';
 
+const router = Router();
 
-const router = Router()
+router.post('/register', registerLimiter, registerValidator, validate, register);
+router.post('/verify-otp', otpLimiter, verifyOtpValidator, validate, verifyOtp);
+router.post('/resend-otp', otpLimiter, resendOtpValidator, validate, resendOtp);
+router.post('/login', loginLimiter, loginValidator, validate, login);
+router.post('/logout', logout);
+router.post('/refresh', refresh);
+router.get('/me', protect, getMe);
+router.post('/forgot-password', forgotPasswordLimiter, forgotPasswordValidator, validate, forgotPassword);
+router.post('/reset-password', resetPasswordValidator, validate, resetPassword);
 
-router.post("/signup", registerLimiter, signUp)
-router.post("/verify-otp", otpLimiter, verifyOtp)
-router.post("/resend-otp", otpLimiter, resendOtp)
-router.post("/signin", loginLimiter, signIn)
-router.post("/logout", logOut)
-router.post("/refresh", refresh)
-router.post("/forgot-password", forgotPasswordLimiter, forgotPassowrd)
-router.post("/reset-password/:token", resestPassword)
-
-router.post("/me",protect, getMe)
-
-export default router
+export default router;

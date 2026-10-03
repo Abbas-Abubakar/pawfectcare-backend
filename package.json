@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "nodemon server.js",
-    "create-search-indexes": "node src/scripts/createSearchIndexes.js"
+    "create-search-indexes": "node src/scripts/createSearchIndexes.js",
+    "seed": "node src/scripts/seed.js"
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +19,7 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.0",
     "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^8.7.0",
     "express-validator": "^7.3.2",
     "helmet": "^8.3.0",

@@ -12,7 +12,7 @@ import { generateResetToken, hashToken, RESET_TOKEN_EXPIRY_MS } from "../utils/t
  * @desc Register an new user, (pet owner, veterinarian, shelter admin)
  */
 
-export const signUp = asyncErrorHandler(async (req, res) => {
+export const register = asyncErrorHandler(async (req, res) => {
   const { name, email, password, phone, role } = req.body
 
   if (!name || !email || !password || !phone || !role) throw new AppError("Name, email, password, phone, role are all required", 400)
@@ -128,7 +128,7 @@ export const resendOtp = asyncErrorHandler(async (req, res) => {
  * @route POST /api/auth/signin
  * @desc  Log in existing user
  */
-export const signIn = asyncErrorHandler(async (req, res) => {
+export const login = asyncErrorHandler(async (req, res) => {
   const { email, password } = req.body
 
   if (!email || !password) throw new AppError("Email and password are required", 400)
@@ -175,7 +175,7 @@ export const signIn = asyncErrorHandler(async (req, res) => {
  * @desc logout the current user 
  */
 
-export const logOut = (req, res) => {
+export const logout = (req, res) => {
   clearAuthCookies(res)
   res.status(200).json({
     status: "success",
@@ -220,7 +220,7 @@ export const refresh = asyncErrorHandler(async (req, res) => {
  * @route POST /api/auth/forgot-password
  * @desc Generate a reset token and email a reset link
  */
-export const forgotPassowrd = asyncErrorHandler(async (req, res) => {
+export const forgotPassword = asyncErrorHandler(async (req, res) => {
   const { email } = req.body
 
   const normalizedEmail = email.trim().toLowerCase()
@@ -260,7 +260,7 @@ export const forgotPassowrd = asyncErrorHandler(async (req, res) => {
  * @desc Resets user password
  */
 
-export const resestPassword = asyncErrorHandler(async (req, res) => {
+export const resetPassword = asyncErrorHandler(async (req, res) => {
   const hashedToken = hashToken(req.params.token)
 
   const user = await User.findOne({passwordResetToken: hashedToken, passwordResetTokenExpires: {$gt: Date.now()}})
