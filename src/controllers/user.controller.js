@@ -3,6 +3,7 @@ import User from '../models/user.model.js';
 import AppError from '../utils/appError.utils.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryUpload.utils.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js';
+import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js';
 
 /**
  * @route   PATCH /api/users/me
@@ -75,4 +76,33 @@ export const deactivateAccount = asyncErrorHandler(async (req, res) => {
       message: 'Account deactivated.',
     });
   
+});
+
+
+
+
+/**
+ * @route   GET /api/users/vets
+ * @desc    Public list of veterinarians — lets pet owners browse who to book with
+ */
+export const getVeterinarians = asyncErrorHandler(async (req, res) => {
+  const { page, limit, skip } = getPagination(req.query);
+
+  const filter = { role: 'veterinarian', isActive: true, isVerified: true };
+
+  const [vets, totalCount] = await Promise.all([
+    User.find(filter)
+      .select('name email phone profilePhoto createdAt')
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    count: vets.length,
+    pagination: buildPaginationMeta(page, limit, totalCount),
+    vets,
+  });
 });

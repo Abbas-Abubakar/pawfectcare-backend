@@ -1,9 +1,10 @@
+import { env } from "../config/env.js";
 import User from "../models/user.model.js";
 import AppError from "../utils/appError.utils.js";
 import asyncErrorHandler from "../utils/asyncErrorHandler.utils.js";
 import { clearAuthCookies, setAuthCookies } from "../utils/cookie.utils.js";
 import { generateAuthToken, signAccessToken, verifyRefreshToken } from "../utils/jwt.utils.js";
-import { sendOtpEmail, sendPasswordresetToken } from "../utils/mailer.utils.js";
+import { sendOtpEmail, sendPasswordresetEmail } from "../utils/mailer.utils.js";
 import { generateOtp, hashOtp, OTP_EXPIRY_MS } from "../utils/otp.utlls.js";
 import { generateResetToken, hashToken, RESET_TOKEN_EXPIRY_MS } from "../utils/token.utils.js";
 
@@ -220,68 +221,89 @@ export const refresh = asyncErrorHandler(async (req, res) => {
  * @route POST /api/auth/forgot-password
  * @desc Generate a reset token and email a reset link
  */
-export const forgotPassword = asyncErrorHandler(async (req, res) => {
-  const { email } = req.body
 
-  const normalizedEmail = email.trim().toLowerCase()
+export const forgotPassword = asyncErrorHandler(async (req, res) => { 
+    const { email } = req.body;
 
-  const user = await User.findOne({ email: normalizedEmail })
+    const normalizedEmail = email.trim().toLowerCase()
 
-  if (!user) throw new AppError("if an account with this email exists, a reset link has been sent", 404)
+    if (!normalizedEmail) {
+      throw new AppError('Email is required.', 400);
+    }
 
-  const { rawToken, hashedToken } = generateResetToken()
-  user.passwordResetToken = hashedToken
-  user.passwordResetTokenExpires = Date.now() + RESET_TOKEN_EXPIRY_MS
-  await user.save({ validateBeforeSave: false })
+    const user = await User.findOne({ email: normalizedEmail });
 
-  const resetUrl = `${req.protocol}://${req.get("host")}/api/auth/reset-password/${rawToken}`
+    // Deliberately respond with the same success message whether or not the
+    // account exists — prevents leaking which emails are registered.
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account with that email exists, a reset link has been sent.',
+      });
+    }
 
-  try {
-    await sendPasswordresetToken(user.email, resetUrl, user.name)
-    res.status(200).json({
-      status: "success",
-      message: "If an account with this email exists, a reset link has been sent"
-    })
+    const { rawToken, hashedToken } = generateResetToken();
 
-  } catch (err) {
-
-    user.passwordResetToken = undefined;
-    user.passwordResetTokenExpires = undefined;
-
+    user.passwordResetToken = hashedToken;
+    user.passwordResetTokenExpires = Date.now() + RESET_TOKEN_EXPIRY_MS;
     await user.save({ validateBeforeSave: false });
 
-    throw new AppError("Failed to send email", 500);
-  }
+    const resetUrl = `${env.clientUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
 
-})
+    await sendPasswordresetEmail(user.email, resetUrl, user.name);
+
+    res.status(200).json({
+      success: true,
+      message: 'If an account with that email exists, a reset link has been sent.',
+    });
+ 
+});
 
 /**
- * @route POST /api/auth/reset-password
- * @desc Resets user password
+ * @route   POST /api/auth/reset-password
+ * @desc    Reset password using a valid token, then log the user in
  */
-
 export const resetPassword = asyncErrorHandler(async (req, res) => {
-  const hashedToken = hashToken(req.params.token)
 
-  const user = await User.findOne({passwordResetToken: hashedToken, passwordResetTokenExpires: {$gt: Date.now()}})
+    const { email, token, newPassword } = req.body;
 
-  if(!user) throw new AppError("Invalid or expired token", 400)
+    if (!email || !token || !newPassword) {
+      throw new AppError('Email, token, and new password are required.', 400);
+    }
 
-  user.password = req.body.newPassword
-  user.passwordResetToken = undefined
-  user.passwordResetTokenExpires = undefined
-  user.passwordChangedAt = Date.now()
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+passwordResetToken +passwordResetTokenExpires'
+    );
 
-  await user.save()
+    if (!user || !user.passwordResetToken || !user.passwordResetTokenExpires) {
+      throw new AppError('Invalid or expired reset link. Please request a new one.', 400);
+    }
 
-  const { accessToken, refreshToken } = generateAuthToken(user._id, user.role)
-  setAuthCookies(res, accessToken, refreshToken)
-  res.status(200).json({
-    status: "sucess",
-    message: "Password reset successful",
-    user: user.toSafeObject()
-  })
-})
+    if (user.passwordResetTokenExpires.getTime() < Date.now()) {
+      throw new AppError('This reset link has expired. Please request a new one.', 400);
+    }
+
+    if (hashToken(token) !== user.passwordResetToken) {
+      throw new AppError('Invalid or expired reset link. Please request a new one.', 400);
+    }
+
+    user.password = newPassword; // pre('save') hook will hash it
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpires = undefined;
+    await user.save();
+
+    // Log the user in immediately after a successful reset
+    const { accessToken, refreshToken } = generateAuthToken(user._id, user.role);
+    setAuthCookies(res, accessToken, refreshToken);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful.',
+      user: user.toSafeObject(),
+    });
+
+});
+
 
 export const getMe = (req, res) => {
   res.status(200).json({

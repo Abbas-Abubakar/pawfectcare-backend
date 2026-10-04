@@ -37,9 +37,10 @@ export const forgotPasswordValidator = [
   body('email').trim().isEmail().withMessage('A valid email is required.').normalizeEmail(),
 ];
 
+
 export const resetPasswordValidator = [
-  body('email').trim().isEmail().withMessage('A valid email is required.').normalizeEmail(),
   body('token').trim().notEmpty().withMessage('Reset token is required.'),
+  body('email').trim().isEmail().withMessage('A valid email is required.').normalizeEmail(),
   body('newPassword')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters.')

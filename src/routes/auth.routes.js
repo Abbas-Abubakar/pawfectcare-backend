@@ -37,6 +37,6 @@ router.post('/logout', logout);
 router.post('/refresh', refresh);
 router.get('/me', protect, getMe);
 router.post('/forgot-password', forgotPasswordLimiter, forgotPasswordValidator, validate, forgotPassword);
-router.post('/reset-password', resetPasswordValidator, validate, resetPassword);
+router.post('/reset-password/', resetPasswordValidator, validate, resetPassword);
 
 export default router;

@@ -14,7 +14,7 @@ const petSchema = new mongoose.Schema(
     },
     species: {
       type: String,
-      required: [true, 'Species is required'], // e.g. Dog, Cat, Bird
+      required: [true, 'Species is required'], 
       trim: true,
     },
     breed: {
@@ -61,10 +61,9 @@ petSchema.index({ owner: 1 });
 
 petSchema.virtual('age').get(function () {
   if (!this.dateOfBirth) return null;
-  const ageDifMs = Date.now() - this.dateOfBirth.getTime();
-  const ageDate = new Date(ageDifMs);
-  return Math.abs(ageDate.getUTCFullYear() - 1970);
+  return Math.floor((Date.now() - this.dateOfBirth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 });
+
 
 const Pet = mongoose.model('Pet', petSchema);
 

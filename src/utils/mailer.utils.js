@@ -43,7 +43,7 @@ export const sendOtpEmail = async(to, otp, name) => {
   })
 }
 
-export const sendPasswordresetToken = async(to, resetUrl, name) => {
+export const sendPasswordresetEmail = async(to, resetUrl, name) => {
   await sendEmail({
     to,
     subject: "Reset your PawfectCare Password",
