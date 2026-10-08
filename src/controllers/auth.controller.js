@@ -45,7 +45,7 @@ export const register = asyncErrorHandler(async (req, res) => {
   await sendOtpEmail(user.email, otp, user.name)
 
   res.status(201).json({
-    status: "success",
+    success: true,
     message: "Registration successful. Please check your email for verification code.",
     userId: user._id,
     email: user.email
@@ -86,7 +86,7 @@ export const verifyOtp = asyncErrorHandler(async (req, res, next) => {
   setAuthCookies(res, accessToken, refreshToken)
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: "Account verified successfully",
     user: user.toSafeObject()
   })
@@ -120,7 +120,7 @@ export const resendOtp = asyncErrorHandler(async (req, res) => {
   await sendOtpEmail(user.email, otp, user.name)
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: "A verification code has been sent to your email"
   })
 })
@@ -165,7 +165,7 @@ export const login = asyncErrorHandler(async (req, res) => {
   setAuthCookies(res, accessToken, refreshToken)
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: "Login successful",
     user: user.toSafeObject()
   })
@@ -179,7 +179,7 @@ export const login = asyncErrorHandler(async (req, res) => {
 export const logout = (req, res) => {
   clearAuthCookies(res)
   res.status(200).json({
-    status: "success",
+    success: true,
     message: "Logged out successfully"
   })
 }
@@ -212,7 +212,7 @@ export const refresh = asyncErrorHandler(async (req, res) => {
   })
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: "Access token refreshed."
   })
 })
@@ -307,7 +307,7 @@ export const resetPassword = asyncErrorHandler(async (req, res) => {
 
 export const getMe = (req, res) => {
   res.status(200).json({
-    status: "success",
+    success: true,
     user: req.user.toSafeObject()
   })
 }

@@ -2,7 +2,7 @@ import { env } from "../config/env.js"
 
 const devErrors = (res, error) => {
   res.status(error.statusCode).json({
-    status: error.status,
+    success: error.success,
     message: error.message,
     stack: error.stack,
     error: error
@@ -11,20 +11,20 @@ const devErrors = (res, error) => {
 
 const prodErrors = (res, error) => {
   if(error.isOperational){
-    res.status(error.status).json({
-      status: error.status,
+    res.status(error.statusCode).json({
+      success: error.success,
       message: error.message
     })
   } else {
     res.status(500).json({
-      status: "error",
+      success: false,
       message: "Something went wrong, please try again later"
     })
   }
 }
 
 export const globalErrorHandler = (error, req, res, next) => {
-  error.status = error.status || "error"
+  error.success = error.success || false
   error.statusCode = error.statusCode || 500
 
   if(env.nodeEnv === "development"){

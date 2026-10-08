@@ -99,7 +99,7 @@ export const getProductById = asyncErrorHandler(async (req, res) => {
   }
 
   res.status(200).json({
-    status: "success",
+    success: true,
     product,
   });
 
@@ -136,7 +136,7 @@ export const updateProduct = asyncErrorHandler(async (req, res) => {
   await product.save();
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: 'Product updated successfully.',
     product,
   });
@@ -158,7 +158,7 @@ export const deleteProduct = asyncErrorHandler(async (req, res) => {
   await product.save();
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: 'Product deleted successfully.',
   });
 

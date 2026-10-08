@@ -31,6 +31,14 @@ export const bookAppointment = asyncErrorHandler(async (req, res) => {
     throw new AppError('This slot has already been booked. Please choose another.', 409);
   }
 
+  const slotDateTime = new Date(slot.date);
+  const [hours, minutes] = slot.startTime.split(':').map(Number);
+  slotDateTime.setHours(hours, minutes, 0, 0);
+
+  if (slotDateTime < new Date()) {
+    throw new AppError('This time slot has already passed.', 400);
+  }
+
   const appointment = await Appointment.create({
     pet: pet._id,
     owner: req.user._id,
@@ -142,6 +150,14 @@ export const rescheduleAppointment = asyncErrorHandler(async (req, res, next) =>
   }
   if (newSlot.vet.toString() !== appointment.vet.toString()) {
     throw new AppError('New slot must be with the same veterinarian.', 400);
+  }
+
+  const slotDateTime = new Date(slot.date);
+  const [hours, minutes] = slot.startTime.split(':').map(Number);
+  slotDateTime.setHours(hours, minutes, 0, 0);
+
+  if (slotDateTime < new Date()) {
+    throw new AppError('This time slot has already passed.', 400);
   }
 
   // Free up the old slot

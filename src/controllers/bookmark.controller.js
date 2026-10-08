@@ -6,7 +6,7 @@ import asyncErrorHandler from '../utils/asyncErrorHandler.utils.js'
  * @route   GET /api/bookmarks
  * @desc    Get the logged-in user's bookmarked posts
  */
-export const getBookmarks = asyncErrorHandler(async (req, res, next) => {
+export const getBookmarks = asyncErrorHandler(async (req, res) => {
 
   const bookmark = await Bookmark.findOne({ user: req.user._id }).populate({
     path: 'posts',
@@ -32,7 +32,7 @@ export const getBookmarks = asyncErrorHandler(async (req, res, next) => {
  * @route   POST /api/bookmarks/:postId
  * @desc    Bookmark a blog post
  */
-export const addBookmark = asyncErrorHandler(async (req, res, next) => {
+export const addBookmark = asyncErrorHandler(async (req, res) => {
 
   const { postId } = req.params;
 
@@ -62,7 +62,7 @@ export const addBookmark = asyncErrorHandler(async (req, res, next) => {
  * @route   DELETE /api/bookmarks/:postId
  * @desc    Remove a bookmark
  */
-export const removeBookmark = asyncErrorHandler(async (req, res, next) => {
+export const removeBookmark = asyncErrorHandler(async (req, res) => {
 
   const { postId } = req.params;
 

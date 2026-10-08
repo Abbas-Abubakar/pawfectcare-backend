@@ -46,6 +46,8 @@ export const changePassword = asyncErrorHandler(async (req, res) => {
       throw new AppError('Current and new password are required.', 400);
     }
 
+    if(currentPassword === newPassword) throw new AppError("Passwords are the same", 400)
+
     const user = await User.findById(req.user._id).select('+password');
 
     if (!(await user.comparePassword(currentPassword))) {

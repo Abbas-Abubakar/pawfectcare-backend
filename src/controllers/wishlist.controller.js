@@ -17,13 +17,13 @@ export const getWishlist = asyncErrorHandler(async (req, res, next) => {
     // No wishlist yet — return an empty one rather than a 404;
     // simplifies frontend logic (no special-casing "not found" for a new user)
     return res.status(200).json({
-      status: "success",
+      success: true,
       wishlist: { products: [] },
     });
   }
 
   res.status(200).json({
-    status: "success",
+    success: true,
     wishlist,
   });
 });
@@ -50,7 +50,7 @@ export const addToWishlist = asyncErrorHandler(async (req, res) => {
   }
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: 'Product added to wishlist.',
     wishlist,
   });
@@ -74,7 +74,7 @@ export const removeFromWishlist = asyncErrorHandler(async (req, res, next) => {
   await wishlist.save();
 
   res.status(200).json({
-    status: "success",
+    success: true,
     message: 'Product removed from wishlist.',
     wishlist,
   });

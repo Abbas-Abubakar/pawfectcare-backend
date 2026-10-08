@@ -8,7 +8,7 @@ import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js
  * @route   POST /api/blog
  * @desc    Create a blog post (veterinarian or shelter_admin)
  */
-export const createBlogPost = asyncErrorHandler(async (req, res, next) => {
+export const createBlogPost = asyncErrorHandler(async (req, res) => {
   const { title, content, excerpt, category } = req.body;
 
   if (!title || !content || !category) {
