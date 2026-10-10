@@ -17,7 +17,7 @@ import {
   otpLimiter,
   forgotPasswordLimiter,
 } from '../middleware/rateLimiter.middleware.js';
-import { validate } from '../middleware/validate.middlware.js';
+import { validate } from '../middleware/validate.middleware.js';
 import {
   registerValidator,
   loginValidator,

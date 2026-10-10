@@ -10,18 +10,24 @@ import {
 } from '../controllers/adoptionListing.controller.js';
 import { protect, restrictTo } from '../middleware/auth.middleware.js';
 import { uploadMultiple } from '../middleware/upload.middleware.js';
+import { validate } from '../middleware/validate.middleware.js';
+import {
+  createListingValidator,
+  updateListingValidator,
+  listingIdParamValidator,
+  removePhotoParamValidator,
+} from '../validators/adoptionListing.validator.js';
 
 const router = Router();
 
-router.get('/', getListings); // public browsing
+router.get('/', getListings);
+router.get('/:id', listingIdParamValidator, validate, getListingById);
 
-
-router.post('/', protect, restrictTo('shelter_admin'), uploadMultiple('photos', 6), createListing);
-router.get('/my-listings',protect, restrictTo('shelter_admin'),  getMyListings);
-
-router.get('/:id', getListingById);
-router.patch('/:id', protect, restrictTo('shelter_admin'), uploadMultiple('photos', 6), updateListing);
-router.delete('/:id/photos/:photoId', protect, restrictTo('shelter_admin'), removeListingPhoto);
-router.delete('/:id', protect, restrictTo('shelter_admin'), deleteListing);
+router.use(protect, restrictTo('shelter_admin'));
+router.post('/', uploadMultiple('photos', 6), createListingValidator, validate, createListing);
+router.get('/my-listings', getMyListings);
+router.patch('/:id', uploadMultiple('photos', 6), updateListingValidator, validate, updateListing);
+router.delete('/:id/photos/:photoId', removePhotoParamValidator, validate, removeListingPhoto);
+router.delete('/:id', listingIdParamValidator, validate, deleteListing);
 
 export default router;

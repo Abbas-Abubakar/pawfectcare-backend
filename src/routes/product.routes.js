@@ -8,15 +8,21 @@ import {
 } from '../controllers/product.controller.js';
 import { protect, restrictTo } from '../middleware/auth.middleware.js';
 import { upload } from '../middleware/upload.middleware.js';
+import { validate } from '../middleware/validate.middleware.js';
+import {
+  createProductValidator,
+  updateProductValidator,
+  productIdParamValidator,
+} from '../validators/product.validator.js';
 
 const router = Router();
 
-router.get('/', getProducts); // public-ish, but still requires login for now (see note below)
-router.get('/:id', getProductById);
+router.get('/', getProducts);
+router.get('/:id', productIdParamValidator, validate, getProductById);
 
 router.use(protect);
-router.post('/', restrictTo('shelter_admin'), upload.single('image'), createProduct);
-router.patch('/:id', restrictTo('shelter_admin'), upload.single('image'), updateProduct);
-router.delete('/:id', restrictTo('shelter_admin'), deleteProduct);
+router.post('/', restrictTo('shelter_admin'), upload.single('image'), createProductValidator, validate, createProduct);
+router.patch('/:id', restrictTo('shelter_admin'), upload.single('image'), updateProductValidator, validate, updateProduct);
+router.delete('/:id', restrictTo('shelter_admin'), productIdParamValidator, validate, deleteProduct);
 
 export default router;

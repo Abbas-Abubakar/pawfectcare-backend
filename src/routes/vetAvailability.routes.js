@@ -6,14 +6,20 @@ import {
   deleteAvailability,
 } from '../controllers/vetAvailability.controller.js';
 import { protect, restrictTo } from '../middleware/auth.middleware.js';
+import { validate } from '../middleware/validate.middleware.js';
+import {
+  createAvailabilityValidator,
+  availabilityIdParamValidator,
+  vetIdParamValidator,
+} from '../validators/vetAvailability.validator.js';
 
 const router = Router();
 
 router.use(protect);
 
-router.post('/', restrictTo('veterinarian'), createAvailability);
+router.post('/', restrictTo('veterinarian'), createAvailabilityValidator, validate, createAvailability);
 router.get('/my-slots', restrictTo('veterinarian'), getMyAvailability);
-router.get('/vet/:vetId', getVetOpenSlots); // any authenticated user can view (owners need this to book)
-router.delete('/:id', restrictTo('veterinarian'), deleteAvailability);
+router.get('/vet/:vetId', vetIdParamValidator, validate, getVetOpenSlots);
+router.delete('/:id', restrictTo('veterinarian'), availabilityIdParamValidator, validate, deleteAvailability);
 
 export default router;
