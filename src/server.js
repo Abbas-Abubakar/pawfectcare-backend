@@ -8,7 +8,7 @@ const startServer = async () => {
   try{
     await connectDB()
 
-    const server = app.listen(env.port, () => {
+    const server = app.listen(env.port, '0.0.0.0', () => {
       startReminderJob();
       console.log(`Server is running on port: ${env.port}`)
       console.log(`Environment: ${env.nodeEnv}`)

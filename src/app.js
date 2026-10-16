@@ -32,6 +32,7 @@ import AppError from './utils/appError.utils.js';
 import healthRoutes from './routes/health.routes.js';
 
 const app = express();
+app.set('trust proxy', env.trustProxyHops);
 
 // Security & parsing middleware
 app.use(helmet());

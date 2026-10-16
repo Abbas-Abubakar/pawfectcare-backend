@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const requiredEnvVars = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+const requiredEnvVars = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET', 'OTP_SECRET', 'OTP_EXPIRY_MS', 'SHELTER_ADDRESS', 'SHELTER_LAT', 'SHELTER_LNG', 'SHELTER_PHONE', 'SHELTER_EMAIL', 'SHELTER_HOURS', 'CLIENT_URL', 'TRUST_PROXY_HOPS'];
 
 for (const key of requiredEnvVars) {
   if (!process.env[key]) {
@@ -42,5 +42,8 @@ export const env = {
     email: process.env.SHELTER_EMAIL || '',
     hours: process.env.SHELTER_HOURS || '',
   },
+  trustProxyHops: Number(
+  process.env.TRUST_PROXY_HOPS ?? (process.env.NODE_ENV === 'production' ? 1 : 0)
+),
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
 };
