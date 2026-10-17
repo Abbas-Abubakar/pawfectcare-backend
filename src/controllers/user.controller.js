@@ -11,26 +11,26 @@ import { getPagination, buildPaginationMeta } from '../utils/pagination.utils.js
  */
 export const updateProfile = asyncErrorHandler(async (req, res) => {
 
-    const { name, phone } = req.body;
+  const { name, phone } = req.body;
 
-    if (name !== undefined) req.user.name = name;
-    if (phone !== undefined) req.user.phone = phone;
+  if (name !== undefined) req.user.name = name;
+  if (phone !== undefined) req.user.phone = phone;
 
-    if (req.file) {
-      if (req.user.profilePhoto?.publicId) {
-        await deleteFromCloudinary(req.user.profilePhoto.publicId);
-      }
-      const uploaded = await uploadBufferToCloudinary(req.file.buffer, 'pawfectcare/avatars');
-      req.user.profilePhoto = { url: uploaded.url, publicId: uploaded.publicId };
+  if (req.file) {
+    if (req.user.profilePhoto?.publicId) {
+      await deleteFromCloudinary(req.user.profilePhoto.publicId);
     }
+    const uploaded = await uploadBufferToCloudinary(req.file.buffer, 'pawfectcare/avatars');
+    req.user.profilePhoto = { url: uploaded.url, publicId: uploaded.publicId };
+  }
 
-    await req.user.save();
+  await req.user.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Profile updated successfully.',
-      user: req.user.toSafeObject(),
-    });
+  res.status(200).json({
+    success: true,
+    message: 'Profile updated successfully.',
+    user: req.user.toSafeObject(),
+  });
 
 });
 
@@ -40,28 +40,33 @@ export const updateProfile = asyncErrorHandler(async (req, res) => {
  */
 export const changePassword = asyncErrorHandler(async (req, res) => {
 
-    const { currentPassword, newPassword } = req.body;
+  if (req.user.isDemo) {
+    throw new AppError(DEMO_BLOCKED_MESSAGE, 403);
+  }
 
-    if (!currentPassword || !newPassword) {
-      throw new AppError('Current and new password are required.', 400);
-    }
+  const { currentPassword, newPassword } = req.body;
 
-    if(currentPassword === newPassword) throw new AppError("Passwords are the same", 400)
 
-    const user = await User.findById(req.user._id).select('+password');
+  if (!currentPassword || !newPassword) {
+    throw new AppError('Current and new password are required.', 400);
+  }
 
-    if (!(await user.comparePassword(currentPassword))) {
-      throw new AppError('Current password is incorrect.', 401);
-    }
+  if (currentPassword === newPassword) throw new AppError("Passwords are the same", 400)
 
-    user.password = newPassword;
-    await user.save();
+  const user = await User.findById(req.user._id).select('+password');
 
-    res.status(200).json({
-      success: true,
-      message: 'Password changed successfully.',
-    });
-  
+  if (!(await user.comparePassword(currentPassword))) {
+    throw new AppError('Current password is incorrect.', 401);
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password changed successfully.',
+  });
+
 });
 
 /**
@@ -69,15 +74,18 @@ export const changePassword = asyncErrorHandler(async (req, res) => {
  * @desc    Deactivate own account (soft delete)
  */
 export const deactivateAccount = asyncErrorHandler(async (req, res) => {
+   if (req.user.isDemo) {
+    throw new AppError(DEMO_BLOCKED_MESSAGE, 403);
+  }
 
-    req.user.isActive = false;
-    await req.user.save();
+  req.user.isActive = false;
+  await req.user.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Account deactivated.',
-    });
-  
+  res.status(200).json({
+    success: true,
+    message: 'Account deactivated.',
+  });
+
 });
 
 
