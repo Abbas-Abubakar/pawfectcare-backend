@@ -33,7 +33,16 @@ import healthRoutes from './routes/health.routes.js';
 
 const app = express();
 app.set('trust proxy', env.trustProxyHops);
-
+// TEMPORARY: remove after checking.
+app.get('/api/_debug/ip', (req, res) => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  res.json({
+    reqIp: req.ip,
+    trustProxy: app.get('trust proxy'),
+    forwardedForEntries: forwardedFor ? forwardedFor.split(',').length : 0,
+    forwardedFor: forwardedFor ?? null,
+  });
+});
 // Security & parsing middleware
 app.use(helmet());
 app.use(
