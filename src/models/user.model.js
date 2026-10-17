@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isDemo: {
+    type: Boolean,
+    default: false
+  },
   isVerified: {
     type: Boolean,
     default: false,
@@ -121,6 +125,7 @@ userSchema.methods.toSafeObject = function () {
     profilePhoto: this.profilePhoto,
     isActive: this.isActive,
     isVerified: this.isVerified,
+    isDemo: this.isDemo,
     createdAt: this.createdAt
   }
 }

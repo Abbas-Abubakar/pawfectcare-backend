@@ -45,5 +45,6 @@ export const env = {
   trustProxyHops: Number(
   process.env.TRUST_PROXY_HOPS ?? (process.env.NODE_ENV === 'production' ? 1 : 0)
 ),
+demoMode: process.env.DEMO_MODE === 'true',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
 };

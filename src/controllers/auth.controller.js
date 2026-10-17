@@ -22,6 +22,13 @@ export const register = asyncErrorHandler(async (req, res) => {
 
   if (!validRoles.includes(role)) throw new AppError("Invalid role selected", 400)
 
+  if (env.demoMode && role !== 'pet_owner') {
+    throw new AppError(
+      'Demo mode: new accounts can only be Pet Owners. Use a demo account to explore the other roles.',
+      403
+    );
+  }
+
   const normalizedEmail = email.toLowerCase()
 
   const existingUser = await User.findOne({ email: normalizedEmail })
@@ -42,14 +49,19 @@ export const register = asyncErrorHandler(async (req, res) => {
 
   })
 
-  await sendOtpEmail(user.email, otp, user.name)
+  if (!env.demoMode) {
+    await sendOtpEmail(user.email, otp, user.name);
+  }
 
   res.status(201).json({
     success: true,
-    message: "Registration successful. Please check your email for verification code.",
+    message: env.demoMode
+      ? 'Registration successful.'
+      : 'Registration successful. Please check your email for the verification code.',
     userId: user._id,
-    email: user.email
-  })
+    email: user.email,
+    ...(env.demoMode && { demoOtp: otp }),
+  });
 })
 
 /**
@@ -117,12 +129,17 @@ export const resendOtp = asyncErrorHandler(async (req, res) => {
 
   await user.save({ validateBeforeSave: false })
 
-  await sendOtpEmail(user.email, otp, user.name)
+  if (!env.demoMode) {
+    await sendOtpEmail(user.email, otp, user.name);
+  }
 
   res.status(200).json({
     success: true,
-    message: "A verification code has been sent to your email"
-  })
+    message: env.demoMode
+      ? 'A new demo code has been generated.'
+      : 'A new verification code has been sent to your email.',
+    ...(env.demoMode && { demoOtp: otp }),
+  });
 })
 
 /**
@@ -222,41 +239,41 @@ export const refresh = asyncErrorHandler(async (req, res) => {
  * @desc Generate a reset token and email a reset link
  */
 
-export const forgotPassword = asyncErrorHandler(async (req, res) => { 
-    const { email } = req.body;
+export const forgotPassword = asyncErrorHandler(async (req, res) => {
+  const { email } = req.body;
 
-    const normalizedEmail = email.trim().toLowerCase()
+  const normalizedEmail = email.trim().toLowerCase()
 
-    if (!normalizedEmail) {
-      throw new AppError('Email is required.', 400);
-    }
+  if (!normalizedEmail) {
+    throw new AppError('Email is required.', 400);
+  }
 
-    const user = await User.findOne({ email: normalizedEmail });
+  const user = await User.findOne({ email: normalizedEmail });
 
-    // Deliberately respond with the same success message whether or not the
-    // account exists — prevents leaking which emails are registered.
-    if (!user) {
-      return res.status(200).json({
-        success: true,
-        message: 'If an account with that email exists, a reset link has been sent.',
-      });
-    }
-
-    const { rawToken, hashedToken } = generateResetToken();
-
-    user.passwordResetToken = hashedToken;
-    user.passwordResetTokenExpires = Date.now() + RESET_TOKEN_EXPIRY_MS;
-    await user.save({ validateBeforeSave: false });
-
-    const resetUrl = `${env.clientUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
-
-    await sendPasswordresetEmail(user.email, resetUrl, user.name);
-
-    res.status(200).json({
+  // Deliberately respond with the same success message whether or not the
+  // account exists — prevents leaking which emails are registered.
+  if (!user) {
+    return res.status(200).json({
       success: true,
       message: 'If an account with that email exists, a reset link has been sent.',
     });
- 
+  }
+
+  const { rawToken, hashedToken } = generateResetToken();
+
+  user.passwordResetToken = hashedToken;
+  user.passwordResetTokenExpires = Date.now() + RESET_TOKEN_EXPIRY_MS;
+  await user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${env.clientUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+
+  await sendPasswordresetEmail(user.email, resetUrl, user.name);
+
+  res.status(200).json({
+    success: true,
+    message: 'If an account with that email exists, a reset link has been sent.',
+  });
+
 });
 
 /**
@@ -265,42 +282,42 @@ export const forgotPassword = asyncErrorHandler(async (req, res) => {
  */
 export const resetPassword = asyncErrorHandler(async (req, res) => {
 
-    const { email, token, newPassword } = req.body;
+  const { email, token, newPassword } = req.body;
 
-    if (!email || !token || !newPassword) {
-      throw new AppError('Email, token, and new password are required.', 400);
-    }
+  if (!email || !token || !newPassword) {
+    throw new AppError('Email, token, and new password are required.', 400);
+  }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
-      '+passwordResetToken +passwordResetTokenExpires'
-    );
+  const user = await User.findOne({ email: email.toLowerCase() }).select(
+    '+passwordResetToken +passwordResetTokenExpires'
+  );
 
-    if (!user || !user.passwordResetToken || !user.passwordResetTokenExpires) {
-      throw new AppError('Invalid or expired reset link. Please request a new one.', 400);
-    }
+  if (!user || !user.passwordResetToken || !user.passwordResetTokenExpires) {
+    throw new AppError('Invalid or expired reset link. Please request a new one.', 400);
+  }
 
-    if (user.passwordResetTokenExpires.getTime() < Date.now()) {
-      throw new AppError('This reset link has expired. Please request a new one.', 400);
-    }
+  if (user.passwordResetTokenExpires.getTime() < Date.now()) {
+    throw new AppError('This reset link has expired. Please request a new one.', 400);
+  }
 
-    if (hashToken(token) !== user.passwordResetToken) {
-      throw new AppError('Invalid or expired reset link. Please request a new one.', 400);
-    }
+  if (hashToken(token) !== user.passwordResetToken) {
+    throw new AppError('Invalid or expired reset link. Please request a new one.', 400);
+  }
 
-    user.password = newPassword; // pre('save') hook will hash it
-    user.passwordResetToken = undefined;
-    user.passwordResetTokenExpires = undefined;
-    await user.save();
+  user.password = newPassword; // pre('save') hook will hash it
+  user.passwordResetToken = undefined;
+  user.passwordResetTokenExpires = undefined;
+  await user.save();
 
-    // Log the user in immediately after a successful reset
-    const { accessToken, refreshToken } = generateAuthToken(user._id, user.role);
-    setAuthCookies(res, accessToken, refreshToken);
+  // Log the user in immediately after a successful reset
+  const { accessToken, refreshToken } = generateAuthToken(user._id, user.role);
+  setAuthCookies(res, accessToken, refreshToken);
 
-    res.status(200).json({
-      success: true,
-      message: 'Password reset successful.',
-      user: user.toSafeObject(),
-    });
+  res.status(200).json({
+    success: true,
+    message: 'Password reset successful.',
+    user: user.toSafeObject(),
+  });
 
 });
 

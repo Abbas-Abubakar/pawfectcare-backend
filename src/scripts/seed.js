@@ -60,6 +60,7 @@ const run = async () => {
     password: SEED_PASSWORD,
     role: 'pet_owner',
     isVerified: true,
+    isDemo: true,
   });
 
   const vet1 = await User.create({
@@ -69,6 +70,7 @@ const run = async () => {
     password: SEED_PASSWORD,
     role: 'veterinarian',
     isVerified: true,
+    isDemo: true,
   });
 
   const shelterAdmin1 = await User.create({
@@ -78,6 +80,7 @@ const run = async () => {
     password: SEED_PASSWORD,
     role: 'shelter_admin',
     isVerified: true,
+    isDemo: true,
   });
 
   console.log('🐾 Seeding pets...');

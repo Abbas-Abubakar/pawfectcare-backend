@@ -5,10 +5,13 @@ import { startReminderJob } from "./jobs/reminder.job.js";
 
 
 const startServer = async () => {
-  try{
+  try {
     await connectDB()
 
     const server = app.listen(env.port, '0.0.0.0', () => {
+      if (env.demoMode) {
+        console.warn('DEMO_MODE is ON: OTP codes are returned in API responses.');
+      }
       startReminderJob();
       console.log(`Server is running on port: ${env.port}`)
       console.log(`Environment: ${env.nodeEnv}`)
