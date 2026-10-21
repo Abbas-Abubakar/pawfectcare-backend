@@ -21,13 +21,12 @@ import {
 const router = Router();
 
 router.get('/', getListings);
-router.get('/:id', listingIdParamValidator, validate, getListingById);
 
-router.use(protect, restrictTo('shelter_admin'));
-router.post('/', uploadMultiple('photos', 6), createListingValidator, validate, createListing);
-router.get('/my-listings', getMyListings);
-router.patch('/:id', uploadMultiple('photos', 6), updateListingValidator, validate, updateListing);
-router.delete('/:id/photos/:photoId', removePhotoParamValidator, validate, removeListingPhoto);
-router.delete('/:id', listingIdParamValidator, validate, deleteListing);
+router.post('/', protect, restrictTo('shelter_admin'), uploadMultiple('photos', 6), createListingValidator, validate, createListing);
+router.get('/my-listings', protect, restrictTo('shelter_admin'), getMyListings);
+router.get('/:id', listingIdParamValidator, validate, getListingById);
+router.patch('/:id', protect, restrictTo('shelter_admin'), uploadMultiple('photos', 6), updateListingValidator, validate, updateListing);
+router.delete('/:id/photos/:photoId', protect, restrictTo('shelter_admin'), removePhotoParamValidator, validate, removeListingPhoto);
+router.delete('/:id', listingIdParamValidator, protect, restrictTo('shelter_admin'), validate, deleteListing);
 
 export default router;
